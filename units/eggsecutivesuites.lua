@@ -137,7 +137,7 @@ EggsecutiveSuites.eggsecutivesuite_heavysplatling = MergeTable(DefaultEggsecutiv
     },
 })
 
-return lowerkeys( EggsecutiveSuites )
+return EggsecutiveSuites
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

@@ -42,7 +42,7 @@ local WaveDefs = {
 	High - table of high tide position
 		x - world x coord
 		z - world z coord]]
-	EggsecutiveSuitesByTide = nil,
+	EggBasketsByTide = nil,
 	StaticSpawnsByTide = nil,
 	PlayerSpawnsByTide = nil,
 	HazardLevel = nil,
@@ -50,13 +50,13 @@ local WaveDefs = {
 	TenderChargeTrashIDs = nil,
 	GrillersTrashIDs = nil,
 	GlowfliesTrashIDs = nil,
-	EggsecutiveSuite = nil,
-	Unprofessional = nil,
+	EggBasket = {Active = nil, Inactive = nil},
+	Eggcection = nil,
 	PlayerSlotInitialOrder = nil,
-	ProfreshionalSlotsByWave = { {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil} },
+	EggsecutiveSlotsByWave = { {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil} },
 	--[[subfields:
 	KBuds - table of number unit definition ids]]
-	ProfreshDefs = {},
+	EggsecutiveDefs = {},
 	--[[subfields:
 	MetalEggsOnDeath - number of metal eggs to drop on death]]
 	LesserDefs = {},
@@ -80,8 +80,8 @@ WaveDefs.WaveTypes[4] = WaveDefs.Constants.WaveTypes.XtraWave
 local configname = "mapconfig/map_chickenrun_layout.lua"
 local mapConfig = VFS.FileExists(configname) and VFS.Include(configname) or false
 if mapConfig then
-	if mapConfig.EggsecutiveSuites ~= nil and mapConfig.EggsecutiveSuites.Low ~= nil and mapConfig.EggsecutiveSuites.Mid ~= nil and mapConfig.EggsecutiveSuites.High ~= nil then
-		WaveDefs.EggsecutiveSuitesByTide = mapConfig.EggsecutiveSuites
+	if mapConfig.EggBaskets ~= nil and mapConfig.EggBaskets.Low ~= nil and mapConfig.EggBaskets.Mid ~= nil and mapConfig.EggBaskets.High ~= nil then
+		WaveDefs.EggBasketsByTide = mapConfig.EggBaskets
 	else
 		Spring.Echo("CHICKEN RUN INIT ERROR, MISSING EGGSECUTIVE SUITE LOCATIONS")
 		return nil
@@ -608,12 +608,12 @@ local kbuddefaultids = {}
 local kbuddefaultdefs = {}
 local profresharray = {}
 local profreshnodupesarray = {}
-local unprofreshname = nil
-local unprofreshid = nil
-local unprofreshdef = nil
-local eggsecutivesuitename = nil
-local eggsecutivesuiteid = nil
-local eggsecutivesuitedef = nil
+--local unprofreshname = nil
+--local unprofreshid = nil
+--local unprofreshdef = nil
+--local eggsecutivesuitename = nil
+--local eggsecutivesuiteid = nil
+--local eggsecutivesuitedef = nil
 
 for k, v in pairs(UnitDefNames) do
 	local cp = v.customParams
@@ -625,7 +625,7 @@ for k, v in pairs(UnitDefNames) do
 			table.insert(kbuddefaultdefs, v)
 			table.insert(kbuddefaultids, v.id) 
 		end
-	elseif cp.isprofreshional == "1" then
+	elseif cp.iseggsecutive == "1" then
 		profreshionalsbyname[k] = v
 		--Spring.Echo("CHICKEN RUN DEBUG: FOUND PROFRESHIONAL: " .. k)
 	elseif cp.lesserchickenidrole ~= nil then
@@ -643,8 +643,9 @@ for k, v in pairs(UnitDefNames) do
 		local rolebosses = bosschickenidsbyrole[cp.bosschickenidrole]
 		if rolebosses == nil then
 			bosschickenidsbyrole[cp.bosschickenidrole] = {}
+			rolebosses = bosschickenidsbyrole[cp.bosschickenidrole]
 		end
-		table.insert(bosschickenidsbyrole[cp.bosschickenidrole], v)		
+		table.insert(rolebosses, v)		
 		bosschickenidsbyname[k] = v
 		local deathpowereggs = 0
 		local deathmetaleggs = 0
@@ -659,22 +660,21 @@ for k, v in pairs(UnitDefNames) do
 			MetalEggsOnDeath = deathmetaleggs
 		}
 		--Spring.Echo("CHICKEN RUN DEBUG: FOUND BOSS: " .. k)
-	elseif cp.isunprofreshional == "1" and unprofreshdef == nil then
-		unprofreshdef = v
-		unprofreshid = v.id
-		unprofreshname = k
+	elseif cp.iseggception == "1" and WaveDefs.Eggception == nil then
+		WaveDefs.Eggception = v.id
 		--Spring.Echo("CHICKEN RUN DEBUG: FOUND UNPROFRESHIONAL: " .. k)
-	elseif cp.iseggsecutivesuite == "1" and eggsecutivesuitedef == nil then
-		eggsecutivesuitedef = v
-		eggsecutivesuiteid = v.id
-		eggsecutivesuitename = k
-		--Spring.Echo("CHICKEN RUN DEBUG: FOUND EggsecutiveSuite: " .. k)
+	elseif cp.iseggbasket == "1" and WaveDefs.EggBasket.Active == nil then
+		WaveDefs.EggBasket.Active = v.id
+		--Spring.Echo("CHICKEN RUN DEBUG: FOUND EggBasket: " .. k)
+	elseif cp.iseggbasket == "2" and WaveDefs.EggBasket.Inactive == nil then
+		WaveDefs.EggBasket.Inactive = v.id
+		--Spring.Echo("CHICKEN RUN DEBUG: FOUND EggBasket: " .. k)
 	end
 end
 
 for k, ud in pairs(profreshionalsbyname) do
 	local cp = ud.customParams
-	local mykbuds = {}
+	--[[local mykbuds = {}
 	if cp.kbuds ~= nil then
 		local str = cp.kbuds
 		for word in string.gmatch(str, "%S+") do
@@ -686,7 +686,7 @@ for k, ud in pairs(profreshionalsbyname) do
 	local mykbudids = {}
 	local mykbudsarevalid = true
 	for i = 1, #mykbuds do
-		local littlebuddy = kbudsbyname[mykbuds[i]]
+		local littlebuddy = kbudsbyname[mykbuds[i] ]
 		if littlebuddy ~= nil then
 			table.insert(mykbudids, littlebuddy.id)
 		else
@@ -697,9 +697,9 @@ for k, ud in pairs(profreshionalsbyname) do
 	if not mykbudsarevalid then
 		mykbuds = kbuddefaults
 		mykbudids = kbuddefaultids
-	end
-	WaveDefs.ProfreshDefs[ud.id] = {
-		KBuds = mykbudids
+	end]]
+	WaveDefs.EggsecutiveDefs[ud.id] = {
+		EggsecutiveSuite = cp.eggsecutivesuite
 	}
 	table.insert(profresharray, ud.id)
 	table.insert(profreshnodupesarray, ud.id)
@@ -718,8 +718,8 @@ WaveDefs.StandardTrashIDs = standardtrash
 WaveDefs.TenderChargeTrashIDs = tenderchargetrash
 WaveDefs.GrillersTrashIDs = grillerstrash
 WaveDefs.GlowfliesTrashIDs = glowfliestrash
-WaveDefs.EggsecutiveSuite = { ID = eggsecutivesuiteid, Name = eggsecutivesuitename, Def = eggsecutivesuitedef }
-WaveDefs.Unprofessional = { ID = unprofreshid, Name = unprofreshname, Def = unprofreshdef } 
+--WaveDefs.EggBasket = { ID = eggsecutivesuiteid, Name = eggsecutivesuitename, Def = eggsecutivesuitedef }
+--WaveDefs.Unprofessional = { ID = unprofreshid, Name = unprofreshname, Def = unprofreshdef } 
 
 math.randomseed(GetSeed())
 
@@ -813,37 +813,37 @@ for i = 1, #slots do
 	if (slots[i] == "randomstartnodupes") then
 		local randidx = randomnodupes[nodupesidx]
 		--set this slot to this profreshional for every wave
-		WaveDefs.ProfreshionalSlotsByWave[1][i] = profreshnodupesarray[randidx]
-		WaveDefs.ProfreshionalSlotsByWave[2][i] = profreshnodupesarray[randidx]
-		WaveDefs.ProfreshionalSlotsByWave[3][i] = profreshnodupesarray[randidx]
-		WaveDefs.ProfreshionalSlotsByWave[4][i] = profreshnodupesarray[randidx]
+		WaveDefs.EggsecutiveSlotsByWave[1][i] = profreshnodupesarray[randidx]
+		WaveDefs.EggsecutiveSlotsByWave[2][i] = profreshnodupesarray[randidx]
+		WaveDefs.EggsecutiveSlotsByWave[3][i] = profreshnodupesarray[randidx]
+		WaveDefs.EggsecutiveSlotsByWave[4][i] = profreshnodupesarray[randidx]
 		table.remove(profreshnodupesarray, randidx)
 		nodupesidx = nodupesidx + 1
 	elseif (slots[i] == "randomstart") then
 		--use wave 1's random index for all waves
-		WaveDefs.ProfreshionalSlotsByWave[1][i] = profresharray[waveone]
-		WaveDefs.ProfreshionalSlotsByWave[2][i] = profresharray[waveone]
-		WaveDefs.ProfreshionalSlotsByWave[3][i] = profresharray[waveone]
-		WaveDefs.ProfreshionalSlotsByWave[4][i] = profresharray[waveone]
+		WaveDefs.EggsecutiveSlotsByWave[1][i] = profresharray[waveone]
+		WaveDefs.EggsecutiveSlotsByWave[2][i] = profresharray[waveone]
+		WaveDefs.EggsecutiveSlotsByWave[3][i] = profresharray[waveone]
+		WaveDefs.EggsecutiveSlotsByWave[4][i] = profresharray[waveone]
 	elseif (slots[i] == "randomeverywave") then
-		WaveDefs.ProfreshionalSlotsByWave[1][i] = profresharray[waveone]
-		WaveDefs.ProfreshionalSlotsByWave[2][i] = profresharray[wavetwo]
-		WaveDefs.ProfreshionalSlotsByWave[3][i] = profresharray[wavethree]
-		WaveDefs.ProfreshionalSlotsByWave[4][i] = profresharray[wavefour]
+		WaveDefs.EggsecutiveSlotsByWave[1][i] = profresharray[waveone]
+		WaveDefs.EggsecutiveSlotsByWave[2][i] = profresharray[wavetwo]
+		WaveDefs.EggsecutiveSlotsByWave[3][i] = profresharray[wavethree]
+		WaveDefs.EggsecutiveSlotsByWave[4][i] = profresharray[wavefour]
 	elseif (slots[i] ~= nil) then
 		local slotprofreshional = profreshionalsbyname[slots[i]]
 		if (slotprofreshional ~= nil) then
 			local slotprofreshionalid = slotprofreshional.id
-			WaveDefs.ProfreshionalSlotsByWave[1][i] = slotprofreshionalid
-			WaveDefs.ProfreshionalSlotsByWave[2][i] = slotprofreshionalid
-			WaveDefs.ProfreshionalSlotsByWave[3][i] = slotprofreshionalid
-			WaveDefs.ProfreshionalSlotsByWave[4][i] = slotprofreshionalid
+			WaveDefs.EggsecutiveSlotsByWave[1][i] = slotprofreshionalid
+			WaveDefs.EggsecutiveSlotsByWave[2][i] = slotprofreshionalid
+			WaveDefs.EggsecutiveSlotsByWave[3][i] = slotprofreshionalid
+			WaveDefs.EggsecutiveSlotsByWave[4][i] = slotprofreshionalid
 		else
 			--fall back to random start
-			WaveDefs.ProfreshionalSlotsByWave[1][i] = profresharray[waveone]
-			WaveDefs.ProfreshionalSlotsByWave[2][i] = profresharray[waveone]
-			WaveDefs.ProfreshionalSlotsByWave[3][i] = profresharray[waveone]
-			WaveDefs.ProfreshionalSlotsByWave[4][i] = profresharray[waveone]
+			WaveDefs.EggsecutiveSlotsByWave[1][i] = profresharray[waveone]
+			WaveDefs.EggsecutiveSlotsByWave[2][i] = profresharray[waveone]
+			WaveDefs.EggsecutiveSlotsByWave[3][i] = profresharray[waveone]
+			WaveDefs.EggsecutiveSlotsByWave[4][i] = profresharray[waveone]
 		end
 	end
 end

@@ -93,27 +93,27 @@ local EggsecutiveDefault = {
             name                    = [[Grizzly Co Nanite Bomb]],
             highTrajectory          = 2,
             accuracy                = 256,
-	        areaOfEffect            = 512,
-	        cegTag                  = [[beamweapon_muzzle_purple]],
-	        commandFire             = true,
-	        craterBoost             = 0,
-	        craterMult              = 0,    
+            areaOfEffect            = 512,
+            cegTag                  = [[beamweapon_muzzle_purple]],
+            commandFire             = true,
+            craterBoost             = 0,
+            craterMult              = 0,    
             explosionGenerator      = [[custom:nanitebomb]],
-	        explosionSpeed          = 5,
-	        fireStarter             = 100,
-	        impulseBoost            = 0,
-	        impulseFactor           = 0,
-	        interceptedByShieldType = 2,
-	        model                   = [[wep_b_fabby.s3o]],
-	        range                   = 450,
-	        reloadtime              = 25,
-	        smokeTrail              = true,
+            explosionSpeed          = 5,
+            fireStarter             = 100,
+            impulseBoost            = 0,
+            impulseFactor           = 0,
+            interceptedByShieldType = 2,
+            model                   = [[wep_b_fabby.s3o]],
+            range                   = 450,
+            reloadtime              = 25,
+            smokeTrail              = true,
             soundHit                = [[weapon/aoe_aura2]],
-	        soundHitVolume          = 8,
-	        soundStart              = [[weapon/cannon/cannon_fire3]],
-	        turret                  = true,
-	        weaponType              = [[Cannon]],
-	        weaponVelocity          = 350,    
+            soundHitVolume          = 8,
+            soundStart              = [[weapon/cannon/cannon_fire3]],
+            turret                  = true,
+            weaponType              = [[Cannon]],
+            weaponVelocity          = 350,    
 
 	        customParams = {
 		        timeslow_damagefactor       = [[10]],
@@ -469,7 +469,7 @@ Eggsecutives.eggsecutive_heavysplatling = MergeTable(EggsecutiveHeavy, {
     },
 })
 
-return lowerkeys( Eggsecutives )
+return Eggsecutives
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

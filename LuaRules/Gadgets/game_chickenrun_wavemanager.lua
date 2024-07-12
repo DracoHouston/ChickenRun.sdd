@@ -39,11 +39,11 @@ local TenderCount = 0
 
 local ChickenidsTeamID = nil
 
-local TeamIDForProfreshionalsByWave = nil
+local TeamIDForEggsecutivesByWave = nil
 local PlayerTeams = {}
 local SharedMetalFactor = 1
 
-local CurrentProfreshionals = { nil, nil, nil, nil }
+local CurrentEggsecutives = { nil, nil, nil, nil }
 local CurrentEggsecutiveSuite = nil
 local CurrentEggsDunked = 0
 
@@ -163,11 +163,11 @@ local function GetEggsecutiveSuitePositionForWave()
 	local tidelevel = WaveDefs.TideLevels[WaveTimers.CurrentWave]
 	local tidelevelconstants = WaveDefs.Constants.TideLevels
 	if tidelevel == tidelevelconstants.Low then
-		return WaveDefs.EggsecutiveSuitesByTide.Low
+		return WaveDefs.EggBasketsByTide.Low
 	elseif tidelevel == tidelevelconstants.Mid then
-		return WaveDefs.EggsecutiveSuitesByTide.Mid
+		return WaveDefs.EggBasketsByTide.Mid
 	elseif tidelevel == tidelevelconstants.High then
-		return WaveDefs.EggsecutiveSuitesByTide.High
+		return WaveDefs.EggBasketsByTide.High
 	end
 end
 
@@ -277,8 +277,8 @@ local function TickEggs()
 		suitex, suitey, suitez = spGetUnitPosition(CurrentEggsecutiveSuite)
 	end
 
-	for i = 1, #CurrentProfreshionals do
-		local uid = CurrentProfreshionals[i]
+	for i = 1, #CurrentEggsecutives do
+		local uid = CurrentEggsecutives[i]
 		local profreshx, profreshy, profreshz = spGetUnitPosition(uid)
 		table.insert(profreshpositions, {x = profreshx, y = profreshy, z = profreshz, id = uid })
 		Spring.Echo("profresh " .. i .. " x " .. profreshx ..  " y " .. profreshy .. " z " .. profreshz .. " id " .. uid)
@@ -505,7 +505,7 @@ function gadget:Initialize()
 
 	local eggsuitepos = GetEggsecutiveSuitePositionForWave()
 	local playerspawns = GetPlayerSpawnPositionsForWave()
-	local profreshionals = WaveDefs.ProfreshionalSlotsByWave[1]
+	local profreshionals = WaveDefs.EggsecutiveSlotsByWave[1]
 	PlayerTeams = Spring.GetTeamList(0)
 	
 	local enemies = Spring.GetTeamList(1)
@@ -546,17 +546,17 @@ function gadget:Initialize()
 		local z = pos.z
 		local y = spGetGroundHeight(x,z)
 		local unitID = spCreateUnit(profreshionals[i], x, y, z, 1, teamidsforprofreshionals[1][i], false, false)
-		CurrentProfreshionals[i] = unitID
+		CurrentEggsecutives[i] = unitID
 	end
 	
-	--local unitID = GG.SpawnPregameStructure(WaveDefs.EggsecutiveSuite.ID, teamID, eggsuitepos, true, false)
+	--local unitID = GG.SpawnPregameStructure(WaveDefs.EggBasket.ID, teamID, eggsuitepos, true, false)
 	--local pos = eggsuitepos
 	local x = eggsuitepos.x
 	local z = eggsuitepos.z
 	local y = spGetGroundHeight(x,z)
-	local unitID = spCreateUnit(WaveDefs.EggsecutiveSuite.ID, x, y, z, 1, teamID, false, false)
+	local unitID = spCreateUnit(WaveDefs.EggBasket.Active, x, y, z, 1, teamID, false, false)
 	CurrentEggsecutiveSuite = unitID
-	TeamIDForProfreshionalsByWave = teamidsforprofreshionals
+	TeamIDForEggsecutivesByWave = teamidsforprofreshionals
 end
 
 else
