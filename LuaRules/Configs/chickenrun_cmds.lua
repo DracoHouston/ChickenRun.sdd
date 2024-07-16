@@ -1,0 +1,4 @@
+return {	
+	EGGTHROW = 42000,
+	BOMBTHROW = 42001,
+}

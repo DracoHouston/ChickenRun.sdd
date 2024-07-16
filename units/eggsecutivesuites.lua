@@ -20,9 +20,9 @@ local DefaultEggsecutiveSuite = {
   canPatrol                     = false,
   category                      = [[FLOAT UNARMED]],
   collide                       = false,
-  collisionVolumeOffsets        = [[0 0 0]],
-  collisionVolumeScales         = [[74 74 74]],
-  collisionVolumeType           = [[ellipsoid]],
+ -- collisionVolumeOffsets        = [[0 0 0]],
+ -- collisionVolumeScales         = [[74 74 74]],
+ -- collisionVolumeType           = [[ellipsoid]],
   selectionVolumeOffsets        = [[0 15 0]],
   selectionVolumeScales         = [[70 40 70]],
   selectionVolumeType           = [[box]],
@@ -61,7 +61,7 @@ local DefaultEggsecutiveSuite = {
   useBuildingGroundDecal        = true,
   waterline                     = 0,
   --workerTime                    = Shared.FACTORY_BUILDPOWER,
-  yardMap                       = [[yoooy ooooo ooooo ooooo yoooy]],
+  yardMap                       = [[yyyyy yyyyy yyyyy yyyyy yyyyy]],
 
   featureDefs                   = {
 

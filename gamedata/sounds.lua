@@ -122,6 +122,15 @@ local Sounds = {
 			gainmod = 0,
 			pitch = 0.9,
 		},
+		EggDunk = {
+			file = "sounds/chickenrun/eggdunk.wav",
+			dopplerscale = 0,
+			in3d = false,
+			gainmod = 0,
+			pitchmod = 0.125,
+			pitch = 1,
+			gain = 1,
+		},
 	},
 }
 

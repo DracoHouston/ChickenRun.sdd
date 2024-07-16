@@ -44,11 +44,14 @@ local PlayerTeams = {}
 local SharedMetalFactor = 1
 
 local CurrentEggsecutives = { nil, nil, nil, nil }
-local CurrentEggsecutiveSuite = nil
+local CurrentEggsecutiveSuites = { nil, nil, nil, nil }
+local CurrentEggBasket = nil
 local CurrentEggsDunked = 0
 
-local powereggradiussquared = 200 * 200
-local metaleggradiussquared = 500 * 500
+local powereggradiussquared = 100 * 100
+local dunkradiussquared = 200 * 200
+local reviveradiussquared = 125 * 125
+local metaleggradiussquared = 250 * 250
 
 local ProfreshionalHasPowerEgg = { false, false, false, false }
 
@@ -63,13 +66,26 @@ local WaveTimers = {
 	NextWaveEnd = WaveDefs.Constants.WaveTimes.GracePeriod + WaveDefs.Constants.WaveTimes.Duration }
 
 	
-local spGetGroundHeight = Spring.GetGroundHeight
-local spCreateUnit = Spring.CreateUnit
-local spGetUnitPosition	= Spring.GetUnitPosition
-local spGetFeaturePosition = Spring.GetFeaturePosition
-local spDestroyFeature = Spring.DestroyFeature
-local spAddTeamResource = Spring.AddTeamResource
-local spSetTeamResource = Spring.SetTeamResource
+local spGetGroundHeight		= Spring.GetGroundHeight
+local spCreateUnit			= Spring.CreateUnit
+local spDestroyUnit			= Spring.DestroyUnit
+local spGetUnitPosition		= Spring.GetUnitPosition
+local spGetUnitRadius		= Spring.GetUnitRadius
+local spGetFeaturePosition	= Spring.GetFeaturePosition
+local spDestroyFeature		= Spring.DestroyFeature
+local spAddTeamResource		= Spring.AddTeamResource
+local spSetTeamResource		= Spring.SetTeamResource
+local spSpawnCEG			= Spring.SpawnCEG;
+local spKillTeam			= Spring.KillTeam
+local spGameOver			= Spring.GameOver
+local spGiveOrderToUnit		= Spring.GiveOrderToUnit
+local spInsertUnitCmdDesc   = Spring.InsertUnitCmdDesc
+
+local CEG_DUNK = [[eggdunkfx_spawner]];
+local CMD_FIGHT				= CMD.FIGHT
+local CMD_ATTACK			= CMD.ATTACK
+local CMD_STOP				= CMD.STOP
+local CMD_MANUALFIRE		= CMD.MANUALFIRE
 
 --------------------------------------------------------------------------------
 --helpers
@@ -77,86 +93,6 @@ local spSetTeamResource = Spring.SetTeamResource
 
 local function DistSq(x1, z1, x2, z2)
 	return (x1 - x2)*(x1 - x2) + (z1 - z2)*(z1 - z2)
-end
-
-local function ShouldAdvancePhase(f)
-	local phase = WaveTimers.CurrentPhase
-	local phaseconstants = WaveDefs.Constants.WavePhases
-	if phase == phaseconstants.PreGame then
-		if WaveTimers.NextWaveStart <= f then
-			return true
-		end
-	elseif phase == phaseconstants.InGrace then
-		if WaveTimers.NextGraceEnd <= f then
-			return true
-		end
-	elseif phase == phaseconstants.InWave then
-		if WaveTimers.NextWaveEnd <= f then
-			return true
-		end
-	elseif phase == phaseconstants.PostWave then
-		if WaveTimers.NextWaveStart <= f then
-			return true
-		end
-	elseif phase == phaseconstants.PostGame then
-		return false
-	end
-end
-
-local function AdvancePhase(n)
-	local phase = WaveTimers.CurrentPhase
-	local phaseconstants = WaveDefs.Constants.WavePhases
-	local currentwave = WaveTimers.CurrentWave
-	if phase == phaseconstants.PreGame then
-		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING GRACE")
-		--spawn profreshionals and eggsecutive suite for wave 1
-		WaveTimers.CurrentPhase = phaseconstants.InGrace
-		GG.SetUnitInvincible(CurrentEggsecutiveSuite, true)
-		_G.chickenRunEventArgs = {type="wavestart", wavenum = currentwave, wavetide = WaveDefs.TideLevels[currentwave], wavetype = WaveDefs.WaveTypes[currentwave], wavequota = WaveDefs.WaveQuotas[currentwave]}
-		SendToUnsynced("ChickenRunEvent")
-		_G.chickenRunEventArgs = nil
-	elseif phase == phaseconstants.InGrace then
-		--spawn initial chickens
-		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " LEAVING GRACE")
-		WaveTimers.CurrentPhase = phaseconstants.InWave
-		_G.chickenRunEventArgs = {type="wavephasestart", phase = WaveTimers.CurrentPhase}
-		SendToUnsynced("ChickenRunEvent")
-		_G.chickenRunEventArgs = nil
-	elseif phase == phaseconstants.InWave then
-		--call off chickens
-		--set timers for next wave
-		WaveTimers.CurrentSpawnInterval = 1
-		WaveTimers.CurrentBossSpawnIndex = 1
-		WaveTimers.NextWaveStart = n + WaveDefs.Constants.WaveTimes.PostWave
-		WaveTimers.NextGraceEnd = WaveTimers.NextWaveStart + WaveDefs.Constants.WaveTimes.GracePeriod
-		WaveTimers.NextWaveEnd = WaveTimers.NextGraceEnd + WaveDefs.Constants.WaveTimes.Duration
-		WaveTimers.CurrentPhase = phaseconstants.PostWave
-		ProfreshionalHasPowerEgg = { false, false, false, false }
-		--destroy power eggs
-		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING POSTWAVE")
-		_G.chickenRunEventArgs = {type="wavephasestart", phase = WaveTimers.CurrentPhase}
-		SendToUnsynced("ChickenRunEvent")
-		_G.chickenRunEventArgs = nil
-	elseif phase == phaseconstants.PostWave then
-		--destroy metal eggs
-		if currentwave == WaveDefs.Constants.MaxWaves then
-			--show custom postgame stats widget that im totally going to make	
-			Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " OVER AND SO IS MATCH")
-			WaveTimers.CurrentPhase = phaseconstants.PostGame
-		else
-			--roll power eggs into cummulative egg bonus
-			--revive any dead profreshionals
-			--change ownership of kbuds and profreshionals
-			--teleport everything to next spawn area by tide level
-			--despawn old and spawn new eggsecutive suite
-			WaveTimers.CurrentPhase = phaseconstants.InGrace
-			WaveTimers.CurrentWave = WaveTimers.CurrentWave + 1
-			Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING GRACE")
-			_G.chickenRunEventArgs = {type="wavestart", wavenum = currentwave, wavetide = WaveDefs.TideLevels[currentwave], wavetype = WaveDefs.WaveTypes[currentwave], quota = WaveDefs.WaveQuotas[currentwave]}
-			SendToUnsynced("ChickenRunEvent")
-			_G.chickenRunEventArgs = nil
-		end
-	end
 end
 
 local function GetEggsecutiveSuitePositionForWave()
@@ -193,6 +129,113 @@ local function GetStaticSpawnPositionsForWave()
 	elseif tidelevel == tidelevelconstants.High then
 		return WaveDefs.StaticSpawnsByTide.High
 	end
+end
+
+local function ShouldAdvancePhase(f)
+	local phase = WaveTimers.CurrentPhase
+	local phaseconstants = WaveDefs.Constants.WavePhases
+	if phase == phaseconstants.PreGame then
+		if WaveTimers.NextWaveStart <= f then
+			return true
+		end
+	elseif phase == phaseconstants.InGrace then
+		if WaveTimers.NextGraceEnd <= f then
+			return true
+		end
+	elseif phase == phaseconstants.InWave then
+		if WaveTimers.NextWaveEnd <= f then
+			return true
+		end
+	elseif phase == phaseconstants.PostWave then
+		if WaveTimers.NextWaveStart <= f then
+			return true
+		end
+	elseif phase == phaseconstants.PostGame then
+		return false
+	end
+end
+
+local function SpawnDunkFX(n)	
+	local _,_,_,x,y,z = spGetUnitPosition(CurrentEggBasket, true);
+	local r = spGetUnitRadius(CurrentEggBasket);
+	if r then
+		for i = 1, n do
+			spSpawnCEG( CEG_DUNK,
+				x,y,z,
+				0,0,0,
+				2+(r/3), 2+(r/3)
+			)
+			GG.PlayFogHiddenSound("EggDunk", 1, x, y, z)
+		end
+	end
+end
+
+local function DestroyPowerEggs()
+	for i, v in ipairs(PowerEggs) do
+		spDestroyFeature(v)
+	end
+	PowerEggs = {}
+end
+
+local function DestroyMetalEggs()
+	for i, v in ipairs(MetalEggs) do
+		spDestroyFeature(v)
+	end
+	MetalEggs = {}
+end
+
+local function RemoveUnitsForNewWave()
+	for i, v in ipairs(ActiveBosses) do
+		spDestroyUnit(v, false, true, v, true)
+	end
+	for i, v in ipairs(ActiveChickenids) do
+		spDestroyUnit(v, false, true, v, true)
+	end
+	ActiveBosses = {}
+	ActiveChickenids = {}
+	for i = 1, 4 do
+		if CurrentEggsecutives[i] ~= nil then
+			local uid = CurrentEggsecutives[i]
+			spDestroyUnit(uid, false, true, uid, true)
+			CurrentEggsecutives[i] = nil
+		end
+		if CurrentEggsecutiveSuites[i] ~= nil then
+			local uid = CurrentEggsecutiveSuites[i]
+			spDestroyUnit(uid, false, true, uid, true)
+			CurrentEggsecutiveSuites[i] = nil
+		end
+	end
+	
+	if CurrentEggBasket ~= nil then
+		spDestroyUnit(CurrentEggBasket, false, true, CurrentEggBasket, true)
+		CurrentEggBasket = nil
+	end
+end
+
+local function SpawnForNewWave()
+	local currentwave = WaveTimers.CurrentWave
+	local eggsuitepos = GetEggsecutiveSuitePositionForWave()
+	local playerspawns = GetPlayerSpawnPositionsForWave()
+	local profreshionals = WaveDefs.EggsecutiveSlotsByWave[currentwave]
+	local eggsecutiveteams = TeamIDForEggsecutivesByWave[currentwave]
+	for i = 1, 4 do
+		local pos = playerspawns[i]
+		local x = pos.x
+		local z = pos.z
+		local y = spGetGroundHeight(x,z)
+		local suiteid = spCreateUnit(WaveDefs.EggsecutiveDefs[profreshionals[i]].EggsecutiveSuite, x, y, z, 1, eggsecutiveteams[i], false, false)
+		local eggsecutiveid = spCreateUnit(profreshionals[i], x, y, z, 1, eggsecutiveteams[i], false, false)
+		CurrentEggsecutives[i] = eggsecutiveid
+		CurrentEggsecutiveSuites[i] = suiteid		
+		GG.SetUnitInvincible(suiteid, true)
+	end
+	
+	local x = eggsuitepos.x
+	local z = eggsuitepos.z
+	local y = spGetGroundHeight(x,z)
+	local unitID = spCreateUnit(WaveDefs.EggBasket.Active, x, y, z, 1, PlayerTeams[1], false, false)
+	CurrentEggBasket = unitID
+	GG.SetUnitInvincible(CurrentEggBasket, true)
 end
 
 local function EnqueueSpawnLesserChickenids()
@@ -264,8 +307,24 @@ local function SpawnPowerEggs(n, x, y, z)
 	end
 end
 
+local function CheckTeamWipe()	
+	return false
+end
+
+local function EndGameWithWipe()
+	spGameOver({ChickenidsTeamID})
+end
+
+local function EndGameWithTimeout()	
+	spGameOver({ChickenidsTeamID})
+end
+
+local function EndGameWithVictory()
+	spGameOver(PlayerTeams)
+end
+
 local function TickEggs()
-	Spring.Echo("Tick Eggs starting")
+	--Spring.Echo("Tick Eggs starting")
 	local profreshpositions = {}
 	local metaleggpositions = {}
 	local powereggpositions = {}
@@ -273,15 +332,15 @@ local function TickEggs()
 	
 	local suitex, suitey, suitez
 
-	if CurrentEggsecutiveSuite ~= nil then
-		suitex, suitey, suitez = spGetUnitPosition(CurrentEggsecutiveSuite)
+	if CurrentEggBasket ~= nil then
+		suitex, suitey, suitez = spGetUnitPosition(CurrentEggBasket)
 	end
 
 	for i = 1, #CurrentEggsecutives do
 		local uid = CurrentEggsecutives[i]
 		local profreshx, profreshy, profreshz = spGetUnitPosition(uid)
 		table.insert(profreshpositions, {x = profreshx, y = profreshy, z = profreshz, id = uid })
-		Spring.Echo("profresh " .. i .. " x " .. profreshx ..  " y " .. profreshy .. " z " .. profreshz .. " id " .. uid)
+		--Spring.Echo("profresh " .. i .. " x " .. profreshx ..  " y " .. profreshy .. " z " .. profreshz .. " id " .. uid)
 	end
 		
 	for i = 1, #MetalEggs do
@@ -290,7 +349,7 @@ local function TickEggs()
 		if eggx == nil or eggy == nil or eggz == nil then
 			Spring.Echo("metal egg " .. i .. " id " .. uid .. "has a nil position!!!!")
 		else
-			Spring.Echo("metal egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)			
+			--Spring.Echo("metal egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)			
 			table.insert(metaleggpositions, {x = eggx, y = eggy, z = eggz, id = uid })
 		end
 	end
@@ -301,7 +360,7 @@ local function TickEggs()
 		if eggx == nil or eggy == nil or eggz == nil then
 			Spring.Echo("power egg " .. i .. " id " .. uid .. "has a nil position!!!!")
 		else
-			Spring.Echo("power egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)
+			--Spring.Echo("power egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)
 			table.insert(powereggpositions, {x = eggx, y = eggy, z = eggz, id = uid })
 		end
 	end
@@ -313,7 +372,7 @@ local function TickEggs()
 	local powereggsreclaimed = {}
 	local powereggsdunkedthisframe = 0
 	
-	Spring.Echo("metal egg threshold squared " .. metaleggradiussquared)
+	--Spring.Echo("metal egg threshold squared " .. metaleggradiussquared)
 	for profreshi = 1, #profreshpositions do
 		local profreshpos = profreshpositions[profreshi]
 		local profreshx = profreshpos.x
@@ -328,14 +387,14 @@ local function TickEggs()
 			local eggz = eggpos.z
 			local eggid = eggpos.id
 			local distsquared = DistSq(profreshx, profreshz, eggx, eggz)
-			Spring.Echo("profresh " .. profreshid .. " to metal egg " .. eggid .. "distance squared " .. distsquared)
+			--Spring.Echo("profresh " .. profreshid .. " to metal egg " .. eggid .. "distance squared " .. distsquared)
 			if distsquared <= metaleggradiussquared then
 			--	Spring.Echo("keeping metal egg")
 			--	table.insert(metaleggstokeep, eggid)
 			--else
-				Spring.Echo("attempting to reclaim metal egg")
+				--Spring.Echo("attempting to reclaim metal egg")
 				if metaleggsreclaimed[eggid] == nil then
-					Spring.Echo("reclaimed")
+					--Spring.Echo("reclaimed")
 					metaleggsreclaimed[eggid] = profreshid
 					totalmetalreclaim = totalmetalreclaim + reclaimperegg
 				end
@@ -362,7 +421,7 @@ local function TickEggs()
 			end
 		else
 			local distsquared = DistSq(profreshx, profreshz, suitex, suitez)
-			if distsquared <= powereggradiussquared then	
+			if distsquared <= dunkradiussquared then	
 				ProfreshionalHasPowerEgg[profreshi] = false
 				--CurrentEggsDunked = CurrentEggsDunked + 1
 				powereggsdunkedthisframe = powereggsdunkedthisframe + 1
@@ -371,7 +430,7 @@ local function TickEggs()
 	end
 
 	local metalperplayer = totalmetalreclaim * SharedMetalFactor
-	Spring.Echo("metal per player " .. metalperplayer .. " total " .. totalmetalreclaim .. " shared metal factor " .. SharedMetalFactor)
+	--Spring.Echo("metal per player " .. metalperplayer .. " total " .. totalmetalreclaim .. " shared metal factor " .. SharedMetalFactor)
 
 	for i = 1, #MetalEggs do
 		local uid = MetalEggs[i]
@@ -389,13 +448,13 @@ local function TickEggs()
 
 	for k, v in pairs(metaleggsreclaimed) do
 		spDestroyFeature(k)
-		Spring.Echo("destroying metal egg " .. k)
+		--Spring.Echo("destroying metal egg " .. k)
 		--todo: award to this team the credit			
 	end
 
 	for k, v in pairs(powereggsreclaimed) do
 		spDestroyFeature(k)
-		Spring.Echo("destroying power egg " .. k)
+		--Spring.Echo("destroying power egg " .. k)
 		--todo: award to this team the credit			
 	end
 
@@ -410,6 +469,7 @@ local function TickEggs()
 	end
 	
 	CurrentEggsDunked = CurrentEggsDunked + powereggsdunkedthisframe
+	SpawnDunkFX(powereggsdunkedthisframe)
 
 	_G.chickenRunEventArgs = {type="eggsdunked", eggs = powereggsdunkedthisframe}
 	SendToUnsynced("ChickenRunEvent")
@@ -419,12 +479,91 @@ local function TickEggs()
 	PowerEggs = powereggstokeep
 end
 
+local function AdvancePhase(n)
+	local phase = WaveTimers.CurrentPhase
+	local phaseconstants = WaveDefs.Constants.WavePhases
+	local currentwave = WaveTimers.CurrentWave
+	if phase == phaseconstants.PreGame then
+		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING GRACE")
+		--spawn profreshionals and eggsecutive suite for wave 1
+		SpawnForNewWave()
+		WaveTimers.CurrentPhase = phaseconstants.InGrace
+		_G.chickenRunEventArgs = {type="wavestart", wavenum = currentwave, wavetide = WaveDefs.TideLevels[currentwave], wavetype = WaveDefs.WaveTypes[currentwave], wavequota = WaveDefs.WaveQuotas[currentwave]}
+		SendToUnsynced("ChickenRunEvent")
+		_G.chickenRunEventArgs = nil
+	elseif phase == phaseconstants.InGrace then
+		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " LEAVING GRACE")
+		WaveTimers.CurrentPhase = phaseconstants.InWave
+		TickSpawns(n)
+		_G.chickenRunEventArgs = {type="wavephasestart", phase = WaveTimers.CurrentPhase}
+		SendToUnsynced("ChickenRunEvent")
+		_G.chickenRunEventArgs = nil
+	elseif phase == phaseconstants.InWave then
+		--call off chickens
+		--set timers for next wave
+		ProfreshionalHasPowerEgg = { false, false, false, false }
+		DestroyPowerEggs()
+		if CurrentEggsDunked < WaveDefs.WaveQuotas[currentwave] then
+			EndGameWithTimeout()
+		end
+		CurrentEggsDunked = 0
+		WaveTimers.CurrentSpawnInterval = 1
+		WaveTimers.CurrentBossSpawnIndex = 1
+		WaveTimers.NextWaveStart = n + WaveDefs.Constants.WaveTimes.PostWave
+		WaveTimers.NextGraceEnd = WaveTimers.NextWaveStart + WaveDefs.Constants.WaveTimes.GracePeriod
+		WaveTimers.NextWaveEnd = WaveTimers.NextGraceEnd + WaveDefs.Constants.WaveTimes.Duration
+		WaveTimers.CurrentPhase = phaseconstants.PostWave
+		Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING POSTWAVE")
+		_G.chickenRunEventArgs = {type="wavephasestart", phase = WaveTimers.CurrentPhase}
+		SendToUnsynced("ChickenRunEvent")
+		_G.chickenRunEventArgs = nil
+	elseif phase == phaseconstants.PostWave then
+		DestroyMetalEggs()
+		if currentwave == WaveDefs.Constants.MaxWaves then
+			--show custom postgame stats widget that im totally going to make	
+			Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " OVER AND SO IS MATCH")
+			WaveTimers.CurrentPhase = phaseconstants.PostGame
+			EndGameWithVictory()
+		else
+			--roll power eggs into cummulative egg bonus
+			--revive any dead profreshionals
+			--change ownership of kbuds and profreshionals
+			--teleport everything to next spawn area by tide level
+			--despawn old and spawn new eggsecutive suite
+			WaveTimers.CurrentPhase = phaseconstants.InGrace
+			WaveTimers.CurrentWave = WaveTimers.CurrentWave + 1
+			currentwave = WaveTimers.CurrentWave
+			Spring.Echo("CHICKEN RUN WAVE " .. currentwave .. " ENTERING GRACE")
+			RemoveUnitsForNewWave()
+			SpawnForNewWave()
+			_G.chickenRunEventArgs = {type="wavestart", wavenum = currentwave, wavetide = WaveDefs.TideLevels[currentwave], wavetype = WaveDefs.WaveTypes[currentwave], wavequota = WaveDefs.WaveQuotas[currentwave]}
+			SendToUnsynced("ChickenRunEvent")
+			_G.chickenRunEventArgs = nil
+		end
+	end
+end
+
 --------------------------------------------------------------------------------
 --gadget interface
 --------------------------------------------------------------------------------
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
-
+	local bossdef = WaveDefs.BossDefs[unitDefID]
+	if bossdef ~= nil then
+		local targetID = CurrentEggsecutives[1]
+		if (targetID) then
+			--local tx, ty, tz = spGetUnitPosition(targetID)
+			spGiveOrderToUnit(unitID, CMD_ATTACK, targetID, 0)
+			return
+		end
+	end
+	local eggsecutivedef = WaveDefs.EggsecutiveDefs[unitDefID]
+	if eggsecutivedef ~= nil then
+		Spring.SetUnitRulesParam(unitID, "EggsecutiveEnergy", 100)
+		spInsertUnitCmdDesc(unitID, EggThrowCmdDesc)
+		return
+	end
+	
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
@@ -473,7 +612,12 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
 	end
 end
 
+
+
 function gadget:GameFrame(n)
+	if CheckTeamWipe() then
+		EndGameWithWipe()
+	end
 	if ShouldAdvancePhase(n) then
 		AdvancePhase(n)
 	else
@@ -490,8 +634,8 @@ function gadget:GameStart()
 	for i, t in ipairs(PlayerTeams) do
 		spSetTeamResource(t, "ms", WaveDefs.Constants.MetalStorage)		
 		spSetTeamResource(t, "metal", 0)
-		spSetTeamResource(t, "es", 500 + HIDDEN_STORAGE)		
-		spSetTeamResource(t, "energy", 500)
+		spSetTeamResource(t, "es", WaveDefs.Constants.EnergyStorage)		
+		spSetTeamResource(t, "energy", 0)
 	end
 end
 
@@ -503,19 +647,20 @@ function gadget:Initialize()
 		return
 	end
 
-	local eggsuitepos = GetEggsecutiveSuitePositionForWave()
-	local playerspawns = GetPlayerSpawnPositionsForWave()
-	local profreshionals = WaveDefs.EggsecutiveSlotsByWave[1]
+	Spring.SetCustomCommandDrawData(CMD_EGGTHROW, "EggThrow", {1, 1, 0, 0.7})
+	Spring.AssignMouseCursor("EggThrow", "cursorunload", true, true)
+	gadgetHandler:RegisterCMDID(CMD_EGGTHROW)
+	for _, unitID in pairs(Spring.GetAllUnits()) do
+		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
+	end
+
 	PlayerTeams = Spring.GetTeamList(0)
-	
 	local enemies = Spring.GetTeamList(1)
 	ChickenidsTeamID = enemies[1]
 	local playercount = #PlayerTeams
 	local teamidsforprofreshionals = {}
 	local teamID = PlayerTeams[1]
-	SharedMetalFactor = 4 / playercount
-
-	
+	SharedMetalFactor = 4 / playercount	
 
 	if playercount > 1 then
 		if playercount == 4 then
@@ -540,23 +685,9 @@ function gadget:Initialize()
 		teamidsforprofreshionals = {{teamID,teamID,teamID,teamID}, {teamID,teamID,teamID,teamID}, {teamID,teamID,teamID,teamID}, {teamID,teamID,teamID,teamID}}
 	end
 	
-	for i = 1, 4 do
-		local pos = playerspawns[i]
-		local x = pos.x
-		local z = pos.z
-		local y = spGetGroundHeight(x,z)
-		local unitID = spCreateUnit(profreshionals[i], x, y, z, 1, teamidsforprofreshionals[1][i], false, false)
-		CurrentEggsecutives[i] = unitID
-	end
-	
-	--local unitID = GG.SpawnPregameStructure(WaveDefs.EggBasket.ID, teamID, eggsuitepos, true, false)
-	--local pos = eggsuitepos
-	local x = eggsuitepos.x
-	local z = eggsuitepos.z
-	local y = spGetGroundHeight(x,z)
-	local unitID = spCreateUnit(WaveDefs.EggBasket.Active, x, y, z, 1, teamID, false, false)
-	CurrentEggsecutiveSuite = unitID
 	TeamIDForEggsecutivesByWave = teamidsforprofreshionals
+
+	
 end
 
 else

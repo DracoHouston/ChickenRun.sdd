@@ -26,6 +26,7 @@ local WaveDefs = {
 		MaxBosses = 15,
 		MetalEggReclaim = 10,
 		MetalStorage = 10000 + HIDDEN_STORAGE,
+		EnergyStorage = 10000 + HIDDEN_STORAGE,
 		MaxBossesByRole = { Artillery = 6, Skirmish = 9, Rush = 15 },
 		WavePhases = { PreGame = 0, InGrace = 1, InWave = 2, PostWave = 3, PostGame = 4 },
 		WaveTimes = { GracePeriod = SecondsToFrames(30), Duration = SecondsToFrames(150), PostWave = SecondsToFrames(10) },
@@ -51,11 +52,11 @@ local WaveDefs = {
 	GrillersTrashIDs = nil,
 	GlowfliesTrashIDs = nil,
 	EggBasket = {Active = nil, Inactive = nil},
-	Eggcection = nil,
+	Eggception = nil,
 	PlayerSlotInitialOrder = nil,
 	EggsecutiveSlotsByWave = { {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil} },
 	--[[subfields:
-	KBuds - table of number unit definition ids]]
+	EggsecutiveSuite - id for associated eggsecutive suite]]
 	EggsecutiveDefs = {},
 	--[[subfields:
 	MetalEggsOnDeath - number of metal eggs to drop on death]]
