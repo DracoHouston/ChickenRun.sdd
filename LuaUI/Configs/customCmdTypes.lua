@@ -125,6 +125,7 @@ local custom_cmd_actions = {
 	globalbuild =   {cmdType = 2, cmdID = CMD_GLOBAL_BUILD, name = "Constructor Global AI", states = {'Off', 'On'}},
 	toggledrones =  {cmdType = 2, cmdID = CMD_TOGGLE_DRONES, name = "Drone Construction.", states = {'Off', 'On'}},
 	eggthrow = {cmdType = 1, name = "Throw Egg"},
+	bombthrow = {cmdType = 1, name = "Throw Bomb"},
 }
 
 -- These actions are created from echoing all actions that appear when all units are selected.
@@ -224,6 +225,7 @@ local usedActions = {
 	["evacuate"] = true,
 	
 	["eggthrow"] = true,
+	["bombthrow"] = true,
 }
 
 -- Clear unused actions.

@@ -194,6 +194,7 @@ return {
 		{	"epic_chili_pro_console_enableconsole", "f8"},
 		{	"epic_chili_share_menu_v1.22_sharemenu", "tab"},
 		{	"controlunit", "alt+p"},
-		{	"throwegg", "e"	},
+		{	"eggthrow", "e"	},
+		{	"bombthrow", "d" },
 	},
 }

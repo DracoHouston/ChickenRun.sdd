@@ -22,7 +22,7 @@ local CMD_BOMBTHROW = ChickenRunCMD.BOMBTHROW
 local NaniteBombArmTime = 2
 local NaniteBombArmFrames = NaniteBombArmTime * 30
 
-local EggThrowCmdDesc = {
+local ThrowEggCmdDesc = {
 	id      = CMD_EGGTHROW,
 	type    = CMDTYPE.ICON_MAP,
 	name    = 'Egg Throw',
@@ -31,7 +31,7 @@ local EggThrowCmdDesc = {
 	tooltip = 'Throw Egg: Toss egg, ideally towards the egg basket. Hit egg basket directly to deposit the egg from range.',
 }
 
-local EggThrowCmdDesc = {
+local ThrowBombCmdDesc = {
 	id      = CMD_BOMBTHROW,
 	type    = CMDTYPE.ICON_MAP,
 	name    = 'Nanite Bomb',
@@ -40,11 +40,96 @@ local EggThrowCmdDesc = {
 	tooltip = "Throw Nanite Bomb: Arms on contact, explodes after " .. NaniteBombArmTime .. " seconds. Repairs Eggsecutives, KBuds and Gushers. Damages and slows Chickenids. Edible for Maws and Mudmouth. Hazardous to Flyfish launchers.",
 }
 
-local IsYeeting = {}
+local spGetUnitRulesParam = Spring.GetUnitRulesParam
+local spSetUnitRulesParam = Spring.SetUnitRulesParam
+local spInsertUnitCmdDesc = Spring.InsertUnitCmdDesc
+local spGetUnitPosition = Spring.GetUnitPosition
+local spSpawnProjectile = Spring.SpawnProjectile
+
+local goalSet = {}
 local EggsecutiveDecisionsDefs = VFS.Include("LuaRules/Configs/weapon_eggsecutivedecisions_defs.lua")
-local NaniteBombWeaponID = nil
-local EggThrowWeaponID = nil
-local EggCannonWeaponID = nil
+local EggsecutiveDefs = EggsecutiveDecisionsDefs.EggsecutiveDefs
+local UniversalWeaponDefs = EggsecutiveDecisionsDefs.UniversalWeaponDefs
+local BombThrowWeaponID = EggsecutiveDecisionsDefs.BombThrowWeaponID
+local EggThrowWeaponID = EggsecutiveDecisionsDefs.EggThrowWeaponID
+local EggCannonWeaponID = EggsecutiveDecisionsDefs.EggCannonWeaponID
+local BombThrowRange = UniversalWeaponDefs[BombThrowWeaponID].Range
+local BombThrowRangeSquared = BombThrowRange*BombThrowRange
+local EggThrowRange = UniversalWeaponDefs[EggThrowWeaponID].Range
+local EggThrowRangeSquared = EggThrowRange*EggThrowRange
+local EggCannonRange = UniversalWeaponDefs[EggCannonWeaponID].Range
+local EggCannonRangeSquared = EggCannonRange*EggCannonRange
+local BombThrowWeaponCost = UniversalWeaponDefs[ThrowBombWeaponID].EnergyCost
+local EggThrowWeaponCost = UniversalWeaponDefs[EggThrowWeaponID].EnergyCost
+local EggCannonWeaponCost = UniversalWeaponDefs[EggCannonWeaponID].EnergyCost
+local BombThrowWeaponWhiteFrames = UniversalWeaponDefs[BombThrowWeaponID].WhiteFrames
+local EggThrowWeaponWhiteFrames = UniversalWeaponDefs[EggThrowWeaponID].WhiteFrames
+local EggCannonWeaponWhiteFrames = UniversalWeaponDefs[EggCannonWeaponID].WhiteFrames
+
+local gconstant = 120 / (30*30)
+
+local function InvSqrt(val)
+	local valsqrt = math.sqrt(val)
+	if valsqrt <= 0 then
+		return 0
+	else
+		return 1 / valsqrt
+	end
+end
+
+local function NormalizeVector3(vec)
+	local x = vec[1]
+	local y = vec[2]
+	local z = vec[3]
+	local SquareSum = x * x + y * y + z * z;
+	if SquareSum == 1 then
+	{
+		return {x, y, z};
+	}
+	else if (SquareSum < 0.00000001)
+	{
+		return {0,0,0};
+	}
+	local Scale = InvSqrt(SquareSum);
+
+	return {x * Scale, y * Scale, z * Scale};
+end
+
+local function pitchyawtonormal(pitch, yaw)
+	local CP, SP, CY, SY;
+	SP = math.sin(pitch);
+	CP = math.cos(pitch)
+	SY = math.sin(yaw)
+	CY = math.cost(yaw)
+	return {CP * CY, CP * SY, SP};
+end
+
+local function GetDist2Sqr(a, b)
+	local x, z = (a[1] - b[1]), (a[3] - b[3])
+	return (x*x + z*z)
+end
+
+local function GetDist2(a, b)
+	return math.sqrt(GetDist2Sqr(a, b))
+end
+
+local function GetDir2(a, b)
+	local c = {a[1] - b[1], 0, a[3] - b[3]}
+	return NormalizeVector3(c)
+end
+
+local function multiplyvector3(vec, num)
+	return {vec[1] * num, vec[2] * num, vec[3] * num}
+end
+
+local function GetYeetVelocity(frompos, topos, velocity)
+	local pitch = 0.5 * (math.asin(math.rad(((GetDist2(frompos,topos) * gconstant) / velocity)))
+	local dir = GetDir2(frompos, topos)
+	local yaw = math.atan2(dir[3], dir[1])
+	local yeetvector = pitchyawtonormal(pitch, yaw)
+	local yeetvelocity = multiplyvector3(yeetvector, velocity)
+	return yeetvelocity
+end
 
 function gadget:AllowCommand_GetWantedCommand()
 	return {[CMD_EGGTHROW] = true, [CMD_BOMBTHROW] = true}
@@ -55,14 +140,28 @@ function gadget:AllowCommand_GetWantedUnitDefID()
 end
 
 function gadget:AllowCommand(unitID, unitDefID, teamID,cmdID, cmdParams, cmdOptions)
-	if cmdID == CMD_ATTACK and nukeDefs[unitDefID] then
-		broadcastNuke(unitID, cmdParams)
+	if cmdID == CMD.INSERT and cmdParams[2] == CMD_JUMP then
+		return gadget:AllowCommand(unitID, unitDefID, teamID, CMD_JUMP, {cmdParams[4], cmdParams[5], cmdParams[6]}, cmdParams[3])
 	end
-	return true  -- command was not used
+	local eggsecutives = EggsecutiveDefs
+	if not eggsecutives[unitDefID] then
+		if cmdID == CMD_EGGTHROW or cmdID == CMD_BOMBTHROW then
+			return false
+		end
+		return true
+	end
+		
+	if (cmdID == CMD_EGGTHROW or cmdID == CMD_BOMBTHROW) and cmdParams[3] then
+		return true
+	end
+	if goalSet[unitID] then
+		goalSet[unitID] = nil
+	end
+	return true -- allowed
 end
 
 function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions) -- Only calls for custom commands
-	local eggsecutivedef = EggsecutiveDecisionsDefs[unitDefID]
+	local eggsecutivedef = EggsecutiveDefs[unitDefID]
 	if eggsecutivedef == nil then	
 		return false
 	end
@@ -77,38 +176,32 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	
 	local x, y, z = spGetUnitPosition(unitID)
 	local distSqr = GetDist2Sqr({x, y, z}, cmdParams)
-	local jumpDef = jumpDefs[unitDefID]
-	local range   = jumpDef.range
-
-	if (distSqr < (range*range)) then
-		if (Spring.GetUnitRulesParam(unitID, "jumpReload") >= 1) and Spring.GetUnitRulesParam(unitID,"disarmed") ~= 1 then
-			local coords = table.concat(cmdParams)
-			local currFrame = spGetGameFrame()
-			for allCoords, oldStuff in pairs(jumps) do
-				if currFrame-oldStuff[2] > 150 then
-					jumps[allCoords] = nil --empty jump table (used for randomization) after 5 second. Use case: If infinite wave of unit has same jump coordinate then jump coordinate won't get infinitely random
-				end
-			end
-			if (not jumps[coords]) or jumpDefs[unitDefID].JumpSpreadException then
-				local didJump, removeCommand = Jump(unitID, cmdParams, cmdParams)
-				if not didJump then
-					return true, removeCommand -- command was used
-				end
-				jumps[coords] = {1, currFrame} --memorize coordinate so that next unit can choose different landing site
-				return true, false -- command was used but don't remove it (unit have not finish jump yet)
-			else
-				local r = landBoxSize*jumps[coords][1]^0.5/2
-				local randpos = {
-					cmdParams[1] + random(-r, r),
-					cmdParams[2],
-					cmdParams[3] + random(-r, r)}
-				local didJump, removeCommand = Jump(unitID, randpos, cmdParams)
-				if not didJump then
-					return true, removeCommand -- command was used
-				end
-				jumps[coords][1] = jumps[coords][1] + 1
-				return true, false -- command was used but don't remove it(unit have not finish jump yet)
-			end
+	local rangesquared = 0
+	local cost = 0
+	local whiteframes = 0
+	local currentenergy = spGetUnitRulesParam(unitID, "EggsecutiveEnergy")
+	local weapontouse = nil
+	local projectileParams = {}
+	projectileParams.pos = {x, y, z}
+	if cmdID == CMD_EGGTHROW then
+		rangesquared = EggThrowRangeSquared
+		cost = EggThrowWeaponCost
+		whiteframes = EggThrowWeaponWhiteFrames
+		weapontouse = EggThrowWeaponID
+	elseif cmdID == CMD_BOMBTHROW then
+		rangesquared = BombThrowRangeSquared
+		cost = BombThrowWeaponCost
+		whiteframes = BombThrowWeaponWhiteFrames
+		weapontouse = BombThrowWeaponID
+	end
+	if (distSqr < rangesquared) then
+		if (currentenergy >= cost) and spGetUnitRulesParam(unitID,"disarmed") ~= 1 then
+			--currentenergy = currentenergy - cost
+			spSetUnitRulesParam(unitID, "EggsecutiveEnergy", currentenergy - cost)
+			spSpawnProjectile(weapontouse, projectileParams)
+			return true, true -- command was used and finished. remove it
+		else
+			return true, false -- command was used but don't remove it
 		end
 	else
 		if not goalSet[unitID] then
@@ -118,6 +211,22 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	end
 
 	return true, false -- command was used but don't remove it
+end
+
+function gadget:UnitCreated(unitID, unitDefID, unitTeam)
+	local eggsecutivedef = EggsecutiveDefs[unitDefID]
+	if eggsecutivedef ~= nil then
+		spSetUnitRulesParam(unitID, "EggsecutiveEnergy", eggsecutivedef.EnergyPool)
+		spSetUnitRulesParam(unitID, "EggsecutiveEnergyPerFrame", eggsecutivedef.EnergyPerFrame)		
+		spInsertUnitCmdDesc(unitID, ThrowBombCmdDesc)
+		spInsertUnitCmdDesc(unitID, ThrowEggCmdDesc)
+		return
+	end
+	
+end
+
+function gadget:Initialize()
+	
 end
 
 end

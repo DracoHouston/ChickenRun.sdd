@@ -557,13 +557,6 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 			return
 		end
 	end
-	local eggsecutivedef = WaveDefs.EggsecutiveDefs[unitDefID]
-	if eggsecutivedef ~= nil then
-		Spring.SetUnitRulesParam(unitID, "EggsecutiveEnergy", 100)
-		spInsertUnitCmdDesc(unitID, EggThrowCmdDesc)
-		return
-	end
-	
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)

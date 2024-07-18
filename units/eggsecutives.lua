@@ -54,6 +54,9 @@ local weapon_nanitebomb = {
     weaponVelocity          = 350,    
 
 	customParams = {
+        iseggsecutivedecision       = [[bombthrow]],
+        eggsecutiveenergycost       = 75,
+        eggsecutivewhiteframes      = 4,
 		timeslow_damagefactor       = [[10]],
 		timeslow_overslow_frames    = 2*30, --2 seconds before slow decays
 		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
@@ -96,6 +99,9 @@ local weapon_eggthrow = {
     weaponVelocity          = 350,    
 
 	customParams = {
+        iseggsecutivedecision       = [[eggthrow]],
+        eggsecutiveenergycost       = 75,
+        eggsecutivewhiteframes      = 4,
 		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
 		light_camera_height         = 2500,
 		light_color                 = [[1.5 0.75 1.8]],
@@ -105,6 +111,48 @@ local weapon_eggthrow = {
 
 	damage = {
         default = 0,
+	},   
+}
+
+local weapon_eggcannon = {
+    name                    = [[Grizzly Co Egg Cannon]],
+    highTrajectory          = 2,
+    accuracy                = 256,
+    areaOfEffect            = 256,
+    --cegTag                  = [[beamweapon_muzzle_purple]],
+    commandFire             = true,
+    craterBoost             = 0,
+    craterMult              = 0,    
+    explosionGenerator      = [[custom:eggdunkfx_spawner]],
+    explosionSpeed          = 5,
+    --fireStarter             = 100,
+    impulseBoost            = 0,
+    impulseFactor           = 0,
+    interceptedByShieldType = 0,
+    model                   = [[chickeneggblue_huge.s3o]],
+    range                   = 600,
+    reloadtime              = 1/30,
+    smokeTrail              = true,
+    soundHit                = [[weapon/eggdrop]],
+    soundHitVolume          = 8,
+    soundStart              = [[weapon/cannon/cannon_fire3]],
+    turret                  = true,
+    weaponType              = [[Cannon]],
+    weaponVelocity          = 500,    
+
+	customParams = {
+        iseggsecutivedecision       = [[eggcannon]],
+        eggsecutiveenergycost       = 0,
+        eggsecutivewhiteframes      = 0,
+		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
+		light_camera_height         = 2500,
+		light_color                 = [[1.5 0.75 1.8]],
+		light_radius                = 280,
+		reaim_time                  = 1,
+	},
+
+	damage = {
+        default = 1000,
 	},   
 }
 
@@ -347,24 +395,25 @@ local EggsecutiveDefault = {
             [[custom:NONE]],
             [[custom:VINDIBACK]],
             [[custom:FLASH64]],
-            [[custom:nanitebomb]],
         },
     },    
 
     customParams = {
-        manualfire_desc     = [[Fire Special Weapon: Throw Nanite Bomb.]],
-        iseggsecutive       = 1,
-        canjump             = 1,
-        jump_range          = 400,
-        jump_speed          = 8,
-        jump_reload         = 1,
-        jump_from_midair    = 1,
-        soundok             = [[heavy_bot_move]],
-        soundselect         = [[bot_select]],
-        soundok_vol         = [[0.58]],
-        soundselect_vol     = [[0.5]],
-        soundbuild          = [[builder_start]],
-        aimposoffset        = [[0 10 0]],
+        manualfire_desc             = [[Fire Special Weapon: Throw Nanite Bomb.]],
+        iseggsecutive               = 1,
+        eggsecutiveenergypool       = 100,
+        eggsecutiveenergyperframe   = 2, --50 frames to regen from empty to full or 1.66~ seconds
+        canjump                     = 1,
+        jump_range                  = 400,
+        jump_speed                  = 8,
+        jump_reload                 = 1,
+        jump_from_midair            = 1,
+        soundok                     = [[heavy_bot_move]],
+        soundselect                 = [[bot_select]],
+        soundok_vol                 = [[0.58]],
+        soundselect_vol             = [[0.5]],
+        soundbuild                  = [[builder_start]],
+        aimposoffset                = [[0 10 0]],
     },    
 
     weapons = {  
@@ -377,6 +426,7 @@ local EggsecutiveDefault = {
 
     weaponDefs = {
         NANITE_BOMB = weapon_nanitebomb,
+        EGG_THROW = weapon_eggthrow,
     },
     featureDefs = {
         DEAD = {
@@ -423,14 +473,6 @@ Eggsecutives.eggsecutive_splattershot = MergeTable(EggsecutiveLight, {
         eggsecutivesuite = [[eggsecutivesuite_splattershot]],
     },
 
-    sfxtypes = {
-        explosiongenerators = {
-            [[custom:WARMUZZLE]],
-            [[custom:emg_shells_l]],
-            [[custom:EMG_HIT_HE]],
-        },
-    },
-
     weapons = {
         [5] = {
             def                = [[EGGSECUTIVE_SPLATTERSHOT]],
@@ -452,12 +494,6 @@ Eggsecutives.eggsecutive_blaster = MergeTable(EggsecutiveMid, {
         eggsecutivesuite = [[eggsecutivesuite_blaster]],
     },
 
-    sfxtypes = {
-        explosiongenerators = {
-            [[custom:sonic]],
-        },
-    }, 
-
     weapons = {
         [5] = {
             def                = [[EGGSECUTIVE_BLASTER]],
@@ -478,12 +514,6 @@ Eggsecutives.eggsecutive_undercoverbrella = MergeTable(EggsecutiveLight, {
     customParams = {    
         eggsecutivesuite = [[eggsecutivesuite_undercoverbrella]],
     },
-
-    sfxtypes = {
-        explosiongenerators = {
-            [[custom:ARCHPLOSION]],
-        },
-    }, 
 
     weapons = {
         [5] = {
@@ -509,13 +539,6 @@ Eggsecutives.eggsecutive_heavysplatling = MergeTable(EggsecutiveHeavy, {
         --heat_max_slow  = 0.5,
         --heat_initial   = 0,
     },
-
-    sfxtypes = {
-        explosiongenerators = {
-            [[custom:DEVA_SHELLS]],
-            [[custom:EMG_HIT_HE]],
-        },
-    }, 
 
     weapons = {
         [5] = {
