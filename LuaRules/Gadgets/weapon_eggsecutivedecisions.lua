@@ -100,7 +100,7 @@ local function pitchyawtonormal(pitch, yaw)
 	SP = math.sin(pitch);
 	CP = math.cos(pitch)
 	SY = math.sin(yaw)
-	CY = math.cost(yaw)
+	CY = math.cos(yaw)
 	return {CP * CY, CP * SY, SP};
 end
 
