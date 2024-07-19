@@ -49,7 +49,7 @@ for k, v in pairs(WeaponDefs) do
 		local energycost = EggsecutiveDecisionsDefs.Constants.DefaultEnergyCost
 		local whiteframes = EggsecutiveDecisionsDefs.Constants.DefaultWhiteFrames
 		local weaponrange = 0
-		local weaponspeed = 0
+		local weaponspeed = 50
 		if cp.eggsecutiveenergycost ~= nil then
 			energycost = tonumber(cp.eggsecutiveenergycost)
 		end
@@ -58,9 +58,11 @@ for k, v in pairs(WeaponDefs) do
 		end
 		if v.range ~= nil then
 			weaponrange = tonumber(v.range)
+			Spring.Echo("range " .. v.range .. " weaponrange " .. weaponrange)
 		end
-		if v.weaponVelocity ~= nil then
-			weaponspeed = tonumber(v.weaponVelocity)
+		if v.weaponvelocity ~= nil then
+			weaponspeed = tonumber(v.weaponvelocity)
+			Spring.Echo("weaponVelocity " .. v.weaponvelocity .. " weaponspeed " .. weaponspeed)
 		end
 
 		EggsecutiveDecisionsDefs.UniversalWeaponDefs[k] = {

@@ -27,6 +27,8 @@ end
 --universal weapons
 --------------------------------------------------------------------------------
 
+local gconstant = 120 / (30*30)
+
 local weapon_nanitebomb = {
     name                    = [[Grizzly Co Nanite Bomb]],
     highTrajectory          = 2,
@@ -40,6 +42,7 @@ local weapon_nanitebomb = {
     explosionSpeed          = 5,
     fireStarter             = 100,
     impulseBoost            = 0,
+    myGravity               = gconstant,
     impulseFactor           = 0,
     interceptedByShieldType = 2,
     model                   = [[wep_b_fabby.s3o]],
@@ -84,6 +87,7 @@ local weapon_eggthrow = {
     explosionGenerator      = [[custom:eggdunkfx_spawner]],
     explosionSpeed          = 5,
     --fireStarter             = 100,
+    myGravity               = gconstant,
     impulseBoost            = 0,
     impulseFactor           = 0,
     interceptedByShieldType = 0,
@@ -119,6 +123,7 @@ local weapon_eggcannon = {
     highTrajectory          = 2,
     accuracy                = 256,
     areaOfEffect            = 256,
+    myGravity               = gconstant,
     --cegTag                  = [[beamweapon_muzzle_purple]],
     commandFire             = true,
     craterBoost             = 0,
@@ -347,7 +352,7 @@ local EggsecutiveDefault = {
     brakeRate               = 2.7,
     builder                 = false,    
     buildPic                = [[commrecon.png]],
-    canManualFire           = true,
+    --canManualFire           = true,
     canGuard                = true,
     canMove                 = true,
     canPatrol               = true,
@@ -399,7 +404,7 @@ local EggsecutiveDefault = {
     },    
 
     customParams = {
-        manualfire_desc             = [[Fire Special Weapon: Throw Nanite Bomb.]],
+        --manualfire_desc             = [[Fire Special Weapon: Throw Nanite Bomb.]],
         iseggsecutive               = 1,
         eggsecutiveenergypool       = 100,
         eggsecutiveenergyperframe   = 2, --50 frames to regen from empty to full or 1.66~ seconds
@@ -417,11 +422,11 @@ local EggsecutiveDefault = {
     },    
 
     weapons = {  
-        [3] = {
-            def                = [[NANITE_BOMB]],
-            badTargetCategory  = [[FIXEDWING]],
-            onlyTargetCategory = [[FIXEDWING LAND SINK TURRET SHIP SWIM FLOAT GUNSHIP HOVER]],
-        },
+        --[3] = {
+        --    def                = [[NANITE_BOMB]],
+        --    badTargetCategory  = [[FIXEDWING]],
+        --    onlyTargetCategory = [[FIXEDWING LAND SINK TURRET SHIP SWIM FLOAT GUNSHIP HOVER]],
+        --},
     },
 
     weaponDefs = {
