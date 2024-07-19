@@ -18,7 +18,10 @@ local EggsecutiveDecisionsDefs = {
 	EggsecutiveDefs = {},
 	--[[subfields:
 	EnergyCost - number for the cost in energy for firing this weapon
-	WhiteFrames - number of frames to pause energy regen after use]]
+	WhiteFrames - number of frames to pause energy regen after use
+	Range - range value from weapon def
+	Speed - projectile speed value from weapon def
+	]]
 	UniversalWeaponDefs = {},
 }
 
@@ -39,32 +42,48 @@ for k, v in pairs(UnitDefs) do
 		}
 	end
 end
-
+Spring.Echo("doing scan for eggy weapons")
 for k, v in pairs(WeaponDefs) do
 	local cp = v.customParams
 	if (cp.iseggsecutivedecision ~= nil) then
 		local energycost = EggsecutiveDecisionsDefs.Constants.DefaultEnergyCost
 		local whiteframes = EggsecutiveDecisionsDefs.Constants.DefaultWhiteFrames
+		local weaponrange = 0
+		local weaponspeed = 0
 		if cp.eggsecutiveenergycost ~= nil then
 			energycost = tonumber(cp.eggsecutiveenergycost)
 		end
 		if cp.eggsecutivewhiteframes ~= nil then
 			whiteframes = tonumber(cp.eggsecutivewhiteframes)
 		end
+		if v.range ~= nil then
+			weaponrange = tonumber(v.range)
+		end
+		if v.weaponVelocity ~= nil then
+			weaponspeed = tonumber(v.weaponVelocity)
+		end
+
 		EggsecutiveDecisionsDefs.UniversalWeaponDefs[k] = {
 			EnergyCost = energycost,
 			WhiteFrames = whiteframes,
+			Range = weaponrange,
+			Speed = weaponspeed,
 		}
-		if (cp.iseggsecutivedecision == "bombthrow") and (BombThrowWeaponID == nil) then
-			BombThrowWeaponID = k
+		
+		if (cp.iseggsecutivedecision == "bombthrow") and (EggsecutiveDecisionsDefs.BombThrowWeaponID == nil) then
+		Spring.Echo("bomb throw found")
+			EggsecutiveDecisionsDefs.BombThrowWeaponID = k
 		end
-		if (cp.iseggsecutivedecision == "eggthrow")  and (EggThrowWeaponID == nil) then
-			EggThrowWeaponID = k
+		if (cp.iseggsecutivedecision == "eggthrow")  and (EggsecutiveDecisionsDefs.EggThrowWeaponID == nil) then
+		Spring.Echo("egg throw found")
+			EggsecutiveDecisionsDefs.EggThrowWeaponID = k
 		end
-		if (cp.iseggsecutivedecision == "eggcannon")  and (EggCannonWeaponID == nil) then
-			EggCannonWeaponID = k
+		if (cp.iseggsecutivedecision == "eggcannon")  and (EggsecutiveDecisionsDefs.EggCannonWeaponID == nil) then
+		Spring.Echo("egg cannon found")
+			EggsecutiveDecisionsDefs.EggCannonWeaponID = k
 		end
 	end
 end
 
+Spring.Echo("done scan for eggy weapons")
 return EggsecutiveDecisionsDefs

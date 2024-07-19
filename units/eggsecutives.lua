@@ -427,6 +427,7 @@ local EggsecutiveDefault = {
     weaponDefs = {
         NANITE_BOMB = weapon_nanitebomb,
         EGG_THROW = weapon_eggthrow,
+        EGG_CANNON = weapon_eggcannon,
     },
     featureDefs = {
         DEAD = {

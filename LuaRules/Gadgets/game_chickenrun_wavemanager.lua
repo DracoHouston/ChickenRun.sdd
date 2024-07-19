@@ -640,13 +640,6 @@ function gadget:Initialize()
 		return
 	end
 
-	Spring.SetCustomCommandDrawData(CMD_EGGTHROW, "EggThrow", {1, 1, 0, 0.7})
-	Spring.AssignMouseCursor("EggThrow", "cursorunload", true, true)
-	gadgetHandler:RegisterCMDID(CMD_EGGTHROW)
-	for _, unitID in pairs(Spring.GetAllUnits()) do
-		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
-	end
-
 	PlayerTeams = Spring.GetTeamList(0)
 	local enemies = Spring.GetTeamList(1)
 	ChickenidsTeamID = enemies[1]

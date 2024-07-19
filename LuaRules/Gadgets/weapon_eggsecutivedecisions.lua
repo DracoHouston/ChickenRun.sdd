@@ -45,6 +45,7 @@ local spSetUnitRulesParam = Spring.SetUnitRulesParam
 local spInsertUnitCmdDesc = Spring.InsertUnitCmdDesc
 local spGetUnitPosition = Spring.GetUnitPosition
 local spSpawnProjectile = Spring.SpawnProjectile
+local spSetUnitMoveGoal = Spring.SetUnitMoveGoal
 
 local goalSet = {}
 local EggsecutiveDecisionsDefs = VFS.Include("LuaRules/Configs/weapon_eggsecutivedecisions_defs.lua")
@@ -59,12 +60,15 @@ local EggThrowRange = UniversalWeaponDefs[EggThrowWeaponID].Range
 local EggThrowRangeSquared = EggThrowRange*EggThrowRange
 local EggCannonRange = UniversalWeaponDefs[EggCannonWeaponID].Range
 local EggCannonRangeSquared = EggCannonRange*EggCannonRange
-local BombThrowWeaponCost = UniversalWeaponDefs[ThrowBombWeaponID].EnergyCost
-local EggThrowWeaponCost = UniversalWeaponDefs[EggThrowWeaponID].EnergyCost
-local EggCannonWeaponCost = UniversalWeaponDefs[EggCannonWeaponID].EnergyCost
-local BombThrowWeaponWhiteFrames = UniversalWeaponDefs[BombThrowWeaponID].WhiteFrames
-local EggThrowWeaponWhiteFrames = UniversalWeaponDefs[EggThrowWeaponID].WhiteFrames
-local EggCannonWeaponWhiteFrames = UniversalWeaponDefs[EggCannonWeaponID].WhiteFrames
+local BombThrowCost = UniversalWeaponDefs[BombThrowWeaponID].EnergyCost
+local EggThrowCost = UniversalWeaponDefs[EggThrowWeaponID].EnergyCost
+local EggCannonCost = UniversalWeaponDefs[EggCannonWeaponID].EnergyCost
+local BombThrowWhiteFrames = UniversalWeaponDefs[BombThrowWeaponID].WhiteFrames
+local EggThrowWhiteFrames = UniversalWeaponDefs[EggThrowWeaponID].WhiteFrames
+local EggCannonWhiteFrames = UniversalWeaponDefs[EggCannonWeaponID].WhiteFrames
+local BombThrowSpeed = UniversalWeaponDefs[BombThrowWeaponID].Speed
+local EggThrowSpeed = UniversalWeaponDefs[EggThrowWeaponID].Speed
+local EggCannonSpeed = UniversalWeaponDefs[EggCannonWeaponID].Speed
 
 local gconstant = 120 / (30*30)
 
@@ -83,13 +87,10 @@ local function NormalizeVector3(vec)
 	local z = vec[3]
 	local SquareSum = x * x + y * y + z * z;
 	if SquareSum == 1 then
-	{
 		return {x, y, z};
-	}
-	else if (SquareSum < 0.00000001)
-	{
+	elseif SquareSum < 0.00000001 then
 		return {0,0,0};
-	}
+	end
 	local Scale = InvSqrt(SquareSum);
 
 	return {x * Scale, y * Scale, z * Scale};
@@ -101,7 +102,7 @@ local function pitchyawtonormal(pitch, yaw)
 	CP = math.cos(pitch)
 	SY = math.sin(yaw)
 	CY = math.cos(yaw)
-	return {CP * CY, CP * SY, SP};
+	return {CP * CY, SP, CP * SY };
 end
 
 local function GetDist2Sqr(a, b)
@@ -123,12 +124,16 @@ local function multiplyvector3(vec, num)
 end
 
 local function GetYeetVelocity(frompos, topos, velocity)
-	local pitch = 0.5 * (math.asin(math.rad(((GetDist2(frompos,topos) * gconstant) / velocity)))
+	local pitch = 0.5 * (math.asin(math.rad(((GetDist2(frompos,topos) * gconstant) / velocity))))
 	local dir = GetDir2(frompos, topos)
 	local yaw = math.atan2(dir[3], dir[1])
 	local yeetvector = pitchyawtonormal(pitch, yaw)
 	local yeetvelocity = multiplyvector3(yeetvector, velocity)
 	return yeetvelocity
+end
+
+local function Approach(unitID, cmdParams, range)
+	spSetUnitMoveGoal(unitID, cmdParams[1],cmdParams[2],cmdParams[3], range)
 end
 
 function gadget:AllowCommand_GetWantedCommand()
@@ -161,16 +166,20 @@ function gadget:AllowCommand(unitID, unitDefID, teamID,cmdID, cmdParams, cmdOpti
 end
 
 function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions) -- Only calls for custom commands
+	Spring.Echo("eggy cmd fallback")
 	local eggsecutivedef = EggsecutiveDefs[unitDefID]
 	if eggsecutivedef == nil then	
+		Spring.Echo("not eggy unit")
 		return false
 	end
 
-	if (cmdID ~= CMD_EGGTHROW) or (cmdID ~= CMD_BOMBTHROW) then
+	if (cmdID ~= CMD_EGGTHROW) and (cmdID ~= CMD_BOMBTHROW) then
+		Spring.Echo("not eggy order. cmd is " .. cmdID .. " vs eggthrow " .. CMD_EGGTHROW .. " or bombthrow " .. CMD_BOMBTHROW)	
 		return false
 	end
 
 	if (not Spring.ValidUnitID(unitID)) or (not cmdParams[3]) then
+		Spring.Echo("eggy unit and order that isnt positional OR unit is dead")
 		return true, true
 	end
 	
@@ -181,30 +190,42 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	local whiteframes = 0
 	local currentenergy = spGetUnitRulesParam(unitID, "EggsecutiveEnergy")
 	local weapontouse = nil
+	local muzzlevelocity = 0
 	local projectileParams = {}
 	projectileParams.pos = {x, y, z}
 	if cmdID == CMD_EGGTHROW then
+		Spring.Echo("its egg throw")
 		rangesquared = EggThrowRangeSquared
-		cost = EggThrowWeaponCost
-		whiteframes = EggThrowWeaponWhiteFrames
+		cost = EggThrowCost
+		whiteframes = EggThrowWhiteFrames
 		weapontouse = EggThrowWeaponID
+		muzzlevelocity = EggThrowSpeed
 	elseif cmdID == CMD_BOMBTHROW then
+		Spring.Echo("its bomb throw")
 		rangesquared = BombThrowRangeSquared
-		cost = BombThrowWeaponCost
-		whiteframes = BombThrowWeaponWhiteFrames
+		cost = BombThrowCost
+		whiteframes = BombThrowWhiteFrames
 		weapontouse = BombThrowWeaponID
+		muzzlevelocity = BombThrowSpeed
 	end
 	if (distSqr < rangesquared) then
+	Spring.Echo("in range")
 		if (currentenergy >= cost) and spGetUnitRulesParam(unitID,"disarmed") ~= 1 then
+			Spring.Echo("firing")
 			--currentenergy = currentenergy - cost
 			spSetUnitRulesParam(unitID, "EggsecutiveEnergy", currentenergy - cost)
-			spSpawnProjectile(weapontouse, projectileParams)
+			projectileParams.speed = GetYeetVelocity({x, y, z}, cmdParams, muzzlevelocity)
+			local projectileid = spSpawnProjectile(weapontouse, projectileParams)
+			if (projectileid ~= nil) then Spring.Echo("new projectile id " .. projectileid) else Spring.Echo("new projectile id is nil!") end
 			return true, true -- command was used and finished. remove it
 		else
+			Spring.Echo("cant afford to egg")
 			return true, false -- command was used but don't remove it
 		end
 	else
+		Spring.Echo("not in range")
 		if not goalSet[unitID] then
+			Spring.Echo("set goal")
 			Approach(unitID, cmdParams, range)
 			goalSet[unitID] = true
 		end
@@ -226,7 +247,12 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 end
 
 function gadget:Initialize()
-	
+	Spring.SetCustomCommandDrawData(CMD_EGGTHROW, "EggThrow", {1, 1, 0, 0.7})
+	Spring.AssignMouseCursor("EggThrow", "cursorunload", true, true)
+	gadgetHandler:RegisterCMDID(CMD_EGGTHROW)
+	for _, unitID in pairs(Spring.GetAllUnits()) do
+		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
+	end
 end
 
 end
