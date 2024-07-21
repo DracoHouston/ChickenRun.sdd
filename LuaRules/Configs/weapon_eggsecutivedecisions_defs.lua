@@ -49,7 +49,7 @@ for k, v in pairs(WeaponDefs) do
 		local energycost = EggsecutiveDecisionsDefs.Constants.DefaultEnergyCost
 		local whiteframes = EggsecutiveDecisionsDefs.Constants.DefaultWhiteFrames
 		local weaponrange = 0
-		local weaponspeed = 50
+		local weaponspeed = 900
 		if cp.eggsecutiveenergycost ~= nil then
 			energycost = tonumber(cp.eggsecutiveenergycost)
 		end
@@ -69,7 +69,7 @@ for k, v in pairs(WeaponDefs) do
 			EnergyCost = energycost,
 			WhiteFrames = whiteframes,
 			Range = weaponrange,
-			Speed = weaponspeed,
+			Speed = weaponspeed / 30,
 		}
 		
 		if (cp.iseggsecutivedecision == "bombthrow") and (EggsecutiveDecisionsDefs.BombThrowWeaponID == nil) then

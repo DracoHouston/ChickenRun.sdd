@@ -53,6 +53,8 @@ local WaveDefs = {
 	GlowfliesTrashIDs = nil,
 	EggBasket = {Active = nil, Inactive = nil},
 	Eggception = nil,
+	MetalEggFeatureID = nil,
+	PowerEggFeatureID = nil,
 	PlayerSlotInitialOrder = nil,
 	EggsecutiveSlotsByWave = { {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil}, {nil, nil, nil, nil} },
 	--[[subfields:
@@ -615,6 +617,18 @@ local profreshnodupesarray = {}
 --local eggsecutivesuitename = nil
 --local eggsecutivesuiteid = nil
 --local eggsecutivesuitedef = nil
+
+for k, v in pairs(FeatureDefs) do
+	local cp = v.customParams
+	if (cp.ischickenrunegg ~= nil) then
+		Spring.Echo("ischickenrunegg found " .. cp.ischickenrunegg)
+	end
+	if (WaveDefs.MetalEggFeatureID == nil) and (cp.ischickenrunegg == "metal") then
+		WaveDefs.MetalEggFeatureID = k
+	elseif (WaveDefs.PowerEggFeatureID == nil) and (cp.ischickenrunegg == "power") then
+		WaveDefs.PowerEggFeatureID = k
+	end
+end
 
 for k, v in pairs(UnitDefNames) do
 	local cp = v.customParams

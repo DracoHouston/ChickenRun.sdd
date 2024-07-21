@@ -47,6 +47,7 @@ local spGetUnitPosition = Spring.GetUnitPosition
 local spSpawnProjectile = Spring.SpawnProjectile
 local spSetUnitMoveGoal = Spring.SetUnitMoveGoal
 local spGetUnitDefID = Spring.GetUnitDefID
+local spGetProjectilePosition = Spring.GetProjectilePosition
 
 local goalSet = {}
 local EggsecutiveDecisionsDefs = VFS.Include("LuaRules/Configs/weapon_eggsecutivedecisions_defs.lua")
@@ -121,22 +122,59 @@ local function GetDir2(a, b)
 	return NormalizeVector3(c)
 end
 
+local function GetDir3(a, b)
+	local c = {a[1] - b[1], a[2] - b[2], a[3] - b[3]}
+	return NormalizeVector3(c)
+end
+
 local function multiplyvector3(vec, num)
 	return {vec[1] * num, vec[2] * num, vec[3] * num}
 end
 
+local function dotvector3(a, b) 
+	return (a[1] * b[1]) + (a[2] * b[2]) + (a[3] * b[3])
+end
+
+local upvector = { 0.0, 1.0, 0.0 }
+
 local function GetYeetVelocity(frompos, topos, velocity)
 	Spring.Echo("get yeet velocity from x " .. frompos[1] .. " y " .. frompos[2] .. " z " .. frompos[3] .. "to x " .. topos[1] .. " y " .. topos[2] .. " z " .. topos[3] .. " at velocity " .. velocity)
-	local innerequation = (GetDist2(frompos,topos) * gconstant) / velocity
-	Spring.Echo("innerequation " .. innerequation)
-	local afterrad = math.rad(innerequation)
-	Spring.Echo("afterrad " .. afterrad)
-	local afterasin = math.asin(afterrad)
-	Spring.Echo("afterasin " .. afterasin)
-	local pitch = 0.5 * (afterasin)
+	--local innerequation = (GetDist2(topos,frompos) * gconstant) / (velocity * velocity)
+	--Spring.Echo("innerequation " .. innerequation)
+	--local afterrad = math.rad(innerequation)
+	--Spring.Echo("afterrad " .. afterrad)
+	--local afterasin = math.asin(afterrad)
+	--Spring.Echo("afterasin " .. afterasin)
+	--local pitch = 0.5 * (afterasin)
+	
+	
+	--local velocitysquared = velocity ^ 2
+	--local velocitycubed = velocity ^ 4
+	--local distsquared = GetDist2Sqr(topos,frompos)
+	--Spring.Echo("velocitycubed " .. velocitycubed)
+	--Spring.Echo("velocitysquared " .. velocitysquared)
+	--local heightdiff = topos[2] - frompos[2]
+	--Spring.Echo("dist " .. heightdiff)
+	--local dist = math.sqrt(distsquared)
+	--Spring.Echo("dist " .. dist)
+	--Spring.Echo("distsquared " .. distsquared)
+	--local thingy = (velocitycubed - gconstant) * ((gconstant * distsquared) + (2 * (heightdiff * velocitysquared))  )  
+	--Spring.Echo("thingy " .. thingy)
+	--local innerequation = (velocitysquared - math.sqrt(   thingy    )) / (gconstant * dist)
+	--Spring.Echo("innerequation " .. innerequation)
+	--local pitch = math.atan(math.rad(innerequation))
+	local dir = GetDir3(topos, frompos)
+	local safedot = dotvector3(dir, upvector)
+	if safedot > 1.0 then
+		safedot = 1.0
+	end
+	if safedot < -1.0 then
+		safedot = -1.0
+	end
+	local pitch = math.asin(safedot)
 	Spring.Echo("pitch " .. pitch)
-	local dir = GetDir2(frompos, topos)
-	local yaw = math.atan2(dir[3], dir[1])
+	--local dir = GetDir2(topos, frompos)
+	local yaw = math.atan2(dir[3], dir[1])-- + math.rad(180)
 	Spring.Echo("yaw " .. yaw)
 	local yeetvector = pitchyawtonormal(pitch, yaw)
 	Spring.Echo("yeet vector x" .. yeetvector[1] .. " y " .. yeetvector[2] .. " z " .. yeetvector[3])
@@ -157,9 +195,13 @@ function gadget:ProjectileCreated(proID, proOwnerID, weaponID)
 end
 
 function gadget:ProjectileDestroyed(proID, proOwnerID)
-	--if not proID then
-	--	return
-	--end
+	if not proID then
+		return
+	end
+	
+	local x, y, z = spGetProjectilePosition(proID)
+	
+	local eggID = Spring.CreateFeature("chickenrunpoweregg", x, y, z, math.random(-32000, 32000))
 	Spring.Echo("ProjectileDestroyed called" .. proID)
 end
 
@@ -222,6 +264,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	projectileParams.pos = {x, y, z}
 	projectileParams.owner = unitID
 	projectileParams.team = teamID
+	projectileParams.gravity = -gconstant
 	if cmdID == CMD_EGGTHROW then
 		--Spring.Echo("its egg throw")
 		rangesquared = EggThrowRangeSquared

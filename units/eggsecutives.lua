@@ -27,7 +27,7 @@ end
 --universal weapons
 --------------------------------------------------------------------------------
 
-local gconstant = 120 / (30*30)
+local gconstant = 120 --/ (30*30)
 
 local weapon_nanitebomb = {
     name                    = [[Grizzly Co Nanite Bomb]],

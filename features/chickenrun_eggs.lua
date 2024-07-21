@@ -1,6 +1,6 @@
 return { 
     chickenrunmetalegg = {
-        description = [[Egg]],
+        description = [[Metal Egg]],
         blocking    = false,
         damage      = 10000,
         reclaimable = false,
@@ -9,13 +9,14 @@ return {
         footprintz  = 1,
         customParams = {
             mod = true,
+            ischickenrunegg = [[metal]],
         },
         metal      = 0,
         reclaimTime = 0,
         object      = [[chickenegg.s3o]],
     },
     chickenrunpoweregg = {
-        description = [[Egg]],
+        description = [[Power Egg]],
         blocking    = false,
         damage      = 10000,
         reclaimable = false,
@@ -24,6 +25,7 @@ return {
         footprintz  = 1,
         customParams = {
             mod = true,
+            ischickenrunegg = [[power]],
         },
         metal       = 0,
         reclaimTime = 0,

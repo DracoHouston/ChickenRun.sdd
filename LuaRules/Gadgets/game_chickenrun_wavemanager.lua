@@ -31,6 +31,7 @@ local PendingLessers = {}
 
 local MetalEggs = {}
 local PowerEggs = {}
+local CurrentEggs = {}
 
 local ChickenidPopCount = 0
 local FryCount = 0
@@ -293,7 +294,7 @@ local function SpawnMetalEggs(n, x, y, z)
 	for i = 1, n do
 		local rx, rz = math.random(-30, 30), math.random(-30, 30)
 		local eggID = Spring.CreateFeature("chickenrunmetalegg", x+rx, y, z+rz, math.random(-32000, 32000))
-		table.insert(MetalEggs, eggID)
+		--table.insert(MetalEggs, eggID)
 	end
 end
 
@@ -302,7 +303,7 @@ local function SpawnPowerEggs(n, x, y, z)
 	for i = 1, n do
 		local rx, rz = math.random(-30, 30), math.random(-30, 30)
 		local eggID = Spring.CreateFeature("chickenrunpoweregg", x+rx, y, z+rz, math.random(-32000, 32000))
-		table.insert(PowerEggs, eggID)
+		--table.insert(PowerEggs, eggID)
 		--Spring.Echo("SPAWNED EGG " .. eggID)
 	end
 end
@@ -343,8 +344,11 @@ local function TickEggs()
 		--Spring.Echo("profresh " .. i .. " x " .. profreshx ..  " y " .. profreshy .. " z " .. profreshz .. " id " .. uid)
 	end
 		
-	for i = 1, #MetalEggs do
-		local uid = MetalEggs[i]
+	local activemetaleggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
+	local activepowereggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
+
+	for i = 1, #activemetaleggs do
+		local uid = activemetaleggs[i]
 		local eggx, eggy, eggz = spGetFeaturePosition(uid)
 		if eggx == nil or eggy == nil or eggz == nil then
 			Spring.Echo("metal egg " .. i .. " id " .. uid .. "has a nil position!!!!")
@@ -354,8 +358,8 @@ local function TickEggs()
 		end
 	end
 
-	for i = 1, #PowerEggs do
-		local uid = PowerEggs[i]
+	for i = 1, #activepowereggs do
+		local uid = activepowereggs[i]
 		local eggx, eggy, eggz = spGetFeaturePosition(uid)
 		if eggx == nil or eggy == nil or eggz == nil then
 			Spring.Echo("power egg " .. i .. " id " .. uid .. "has a nil position!!!!")
@@ -432,19 +436,19 @@ local function TickEggs()
 	local metalperplayer = totalmetalreclaim * SharedMetalFactor
 	--Spring.Echo("metal per player " .. metalperplayer .. " total " .. totalmetalreclaim .. " shared metal factor " .. SharedMetalFactor)
 
-	for i = 1, #MetalEggs do
-		local uid = MetalEggs[i]
-		if metaleggsreclaimed[uid] == nil then
-			table.insert(metaleggstokeep, uid)
-		end
-	end
+	--for i = 1, #MetalEggs do
+	--	local uid = MetalEggs[i]
+		--if metaleggsreclaimed[uid] == nil then
+		--	table.insert(metaleggstokeep, uid)
+		--end
+	--end
 
-	for i = 1, #PowerEggs do
-		local uid = PowerEggs[i]
-		if powereggsreclaimed[uid] == nil then
-			table.insert(powereggstokeep, uid)
-		end
-	end
+	--for i = 1, #PowerEggs do
+	--	local uid = PowerEggs[i]
+		--if powereggsreclaimed[uid] == nil then
+		--	table.insert(powereggstokeep, uid)
+		--end
+	--end
 
 	for k, v in pairs(metaleggsreclaimed) do
 		spDestroyFeature(k)
@@ -463,10 +467,6 @@ local function TickEggs()
 			spAddTeamResource( t, "metal", metalperplayer )
 		end
 	end
-
-	for k, v in pairs(powereggsreclaimed) do
-		spDestroyFeature(k)
-	end
 	
 	CurrentEggsDunked = CurrentEggsDunked + powereggsdunkedthisframe
 	SpawnDunkFX(powereggsdunkedthisframe)
@@ -475,8 +475,8 @@ local function TickEggs()
 	SendToUnsynced("ChickenRunEvent")
 	_G.chickenRunEventArgs = nil
 
-	MetalEggs = metaleggstokeep
-	PowerEggs = powereggstokeep
+	--MetalEggs = metaleggstokeep
+	--PowerEggs = powereggstokeep
 end
 
 local function AdvancePhase(n)
@@ -546,6 +546,39 @@ end
 --------------------------------------------------------------------------------
 --gadget interface
 --------------------------------------------------------------------------------
+
+function gadget:FeatureCreated(featureID)
+	local featuredef = Spring.GetFeatureDefID(featureID)
+	
+		Spring.Echo("feature made " .. featureID .. " defid " .. featuredef .. " PE def is " .. WaveDefs.PowerEggFeatureID )
+	if (featuredef == WaveDefs.MetalEggFeatureID) or (featuredef == WaveDefs.PowerEggFeatureID) then
+		if CurrentEggs[featuredef] == nil then
+			CurrentEggs[featuredef] = {}
+		end
+		Spring.Echo("egg made " .. featureID)
+		table.insert(CurrentEggs[featuredef], featureID)
+	end
+end
+
+function gadget:FeatureDestroyed(featureID)
+	local featuredef = Spring.GetFeatureDefID(featureID)
+	if (featuredef == WaveDefs.MetalEggFeatureID) or (featuredef == WaveDefs.PowerEggFeatureID) then
+		local theseeggs = CurrentEggs[featuredef]
+		if theseeggs ~= nil then
+			local idxtoremove = nil
+			for i, v in ipairs(theseeggs) do
+				if v == featureID then
+					idxtoremove = i
+					break
+				end
+			end
+			if idxtoremove ~= nil then
+				Spring.Echo("egg removed " .. featureID)
+				table.remove(theseeggs, idxtoremove)
+			end
+		end
+	end
+end
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 	local bossdef = WaveDefs.BossDefs[unitDefID]
