@@ -33,9 +33,93 @@ local weapon_nanitebomb = {
     name                    = [[Grizzly Co Nanite Bomb]],
     highTrajectory          = 2,
     accuracy                = 256,
+    areaOfEffect            = 0,
+    cegTag                  = [[beamweapon_muzzle_purple]],
+   -- commandFire             = true,
+    craterBoost             = 0,
+    craterMult              = 0,    
+    --explosionGenerator      = [[custom:NONE]],
+    explosionSpeed          = 5,
+    --fireStarter             = 100,
+    impulseBoost            = 0,
+    myGravity               = gconstant,
+    impulseFactor           = 0,
+    interceptedByShieldType = 2,
+    model                   = [[wep_b_fabby.s3o]],
+    range                   = 750,
+    --reloadtime              = 25,
+    smokeTrail              = true,
+	noSelfDamage            = true,
+    --soundHit                = [[weapon/aoe_aura2]],
+    --soundHitVolume          = 8,
+    soundStart              = [[weapon/cannon/cannon_fire3]],
+    turret                  = true,
+    weaponType              = [[Cannon]],
+    weaponVelocity          = 900,    
+
+	customParams = {
+        iseggsecutivedecision       = [[bombthrow]],
+        eggsecutiveenergycost       = 75,
+        eggsecutivewhiteframes      = 4,
+		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
+        child_chain_projectile      = [[NANITE_BOMB_ARMED]],
+		light_camera_height         = 2500,
+		light_color                 = [[1.5 0.75 1.8]],
+		light_radius                = 280,
+		reaim_time                  = 1,
+	},
+
+	damage = {
+        default = 0,
+	},   
+}
+
+local weapon_nanitebomb_armed = {
+    name                    = [[Grizzly Co Nanite Bomb]],
+    highTrajectory          = 2,
+    accuracy                = 256,
     areaOfEffect            = 512,
     cegTag                  = [[beamweapon_muzzle_purple]],
-    commandFire             = true,
+   -- commandFire             = true,
+    craterBoost             = 0,
+    craterMult              = 0,    
+    --explosionGenerator      = [[custom:nanitebomb]],
+   -- explosionSpeed          = 5,
+    --fireStarter             = 100,
+    impulseBoost            = 0,
+    --myGravity               = gconstant,
+    impulseFactor           = 0,
+    interceptedByShieldType = 2,
+    model                   = [[wep_b_fabby.s3o]],
+	noExplode               = true,
+	noSelfDamage            = true,
+    range                   = 750,
+    --reloadtime              = 25,
+    --smokeTrail              = true,
+    --soundHit                = [[weapon/aoe_aura2]],
+    --soundHitVolume          = 8,
+    soundStart              = [[weapon/cannon/cannon_fire3]],
+    turret                  = true,
+    weaponType              = [[Cannon]],
+    weaponVelocity          = 900,    
+
+	customParams = {        
+        timed_explosion             = 2 * 30,
+        child_chain_projectile      = [[NANITE_BOMB_EXPLODING]],
+	},
+
+	damage = {
+        default = 0,
+	},   
+}
+
+local weapon_nanitebomb_exploding = {
+    name                    = [[Grizzly Co Nanite Bomb]],
+    highTrajectory          = 2,
+    accuracy                = 256,
+    areaOfEffect            = 512,
+    cegTag                  = [[beamweapon_muzzle_purple]],
+    --commandFire             = true,
     craterBoost             = 0,
     craterMult              = 0,    
     explosionGenerator      = [[custom:nanitebomb]],
@@ -46,7 +130,7 @@ local weapon_nanitebomb = {
     impulseFactor           = 0,
     interceptedByShieldType = 2,
     model                   = [[wep_b_fabby.s3o]],
-    range                   = 450,
+    range                   = 750,
     reloadtime              = 25,
     smokeTrail              = true,
     soundHit                = [[weapon/aoe_aura2]],
@@ -54,12 +138,9 @@ local weapon_nanitebomb = {
     soundStart              = [[weapon/cannon/cannon_fire3]],
     turret                  = true,
     weaponType              = [[Cannon]],
-    weaponVelocity          = 350,    
+    weaponVelocity          = 900,    
 
 	customParams = {
-        iseggsecutivedecision       = [[bombthrow]],
-        eggsecutiveenergycost       = 75,
-        eggsecutivewhiteframes      = 4,
 		timeslow_damagefactor       = [[10]],
 		timeslow_overslow_frames    = 2*30, --2 seconds before slow decays
 		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
@@ -92,7 +173,7 @@ local weapon_eggthrow = {
     impulseFactor           = 0,
     interceptedByShieldType = 0,
     model                   = [[chickeneggblue_huge.s3o]],
-    range                   = 600,
+    range                   = 750,
     reloadtime              = 1/30,
     smokeTrail              = true,
     soundHit                = [[weapon/eggdrop]],
@@ -100,7 +181,7 @@ local weapon_eggthrow = {
     soundStart              = [[weapon/cannon/cannon_fire3]],
     turret                  = true,
     weaponType              = [[Cannon]],
-    weaponVelocity          = 350,    
+    weaponVelocity          = 1000,    
 
 	customParams = {
         iseggsecutivedecision       = [[eggthrow]],
@@ -143,7 +224,7 @@ local weapon_eggcannon = {
     soundStart              = [[weapon/cannon/cannon_fire3]],
     turret                  = true,
     weaponType              = [[Cannon]],
-    weaponVelocity          = 500,    
+    weaponVelocity          = 1200,    
 
 	customParams = {
         iseggsecutivedecision       = [[eggcannon]],
@@ -431,6 +512,8 @@ local EggsecutiveDefault = {
 
     weaponDefs = {
         NANITE_BOMB = weapon_nanitebomb,
+        NANITE_BOMB_ARMED = weapon_nanitebomb_armed,
+        NANITE_BOMB_EXPLODING = weapon_nanitebomb_exploding,
         EGG_THROW = weapon_eggthrow,
         EGG_CANNON = weapon_eggcannon,
     },

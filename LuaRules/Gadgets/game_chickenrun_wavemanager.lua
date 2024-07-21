@@ -66,7 +66,8 @@ local WaveTimers = {
 	NextGraceEnd = WaveDefs.Constants.WaveTimes.GracePeriod, 
 	NextWaveEnd = WaveDefs.Constants.WaveTimes.GracePeriod + WaveDefs.Constants.WaveTimes.Duration }
 
-	
+local spGetUnitRulesParam	= Spring.GetUnitRulesParam
+local spSetUnitRulesParam	= Spring.SetUnitRulesParam
 local spGetGroundHeight		= Spring.GetGroundHeight
 local spCreateUnit			= Spring.CreateUnit
 local spDestroyUnit			= Spring.DestroyUnit
@@ -345,7 +346,7 @@ local function TickEggs()
 	end
 		
 	local activemetaleggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
-	local activepowereggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
+	local activepowereggs = CurrentEggs[WaveDefs.PowerEggFeatureID] or {}
 
 	for i = 1, #activemetaleggs do
 		local uid = activemetaleggs[i]
@@ -404,8 +405,8 @@ local function TickEggs()
 				end
 			end
 		end
-
-		if ProfreshionalHasPowerEgg[profreshi] == false then
+		local haspoweregg = spGetUnitRulesParam(profreshid, "HoldingPowerEgg") or 0
+		if haspoweregg == 0 then
 			for eggi = 1, #powereggpositions do
 				local eggpos = powereggpositions[eggi]
 				local eggx = eggpos.x
@@ -418,7 +419,8 @@ local function TickEggs()
 				--else
 					if powereggsreclaimed[eggid] == nil then
 						powereggsreclaimed[eggid] = profreshid
-						ProfreshionalHasPowerEgg[profreshi] = true
+						spSetUnitRulesParam(profreshid, "HoldingPowerEgg", 1)
+						--ProfreshionalHasPowerEgg[profreshi] = true
 						break
 					end
 				end
@@ -426,7 +428,8 @@ local function TickEggs()
 		else
 			local distsquared = DistSq(profreshx, profreshz, suitex, suitez)
 			if distsquared <= dunkradiussquared then	
-				ProfreshionalHasPowerEgg[profreshi] = false
+				--ProfreshionalHasPowerEgg[profreshi] = false
+				spSetUnitRulesParam(profreshid, "HoldingPowerEgg", 0)
 				--CurrentEggsDunked = CurrentEggsDunked + 1
 				powereggsdunkedthisframe = powereggsdunkedthisframe + 1
 			end
@@ -550,7 +553,7 @@ end
 function gadget:FeatureCreated(featureID)
 	local featuredef = Spring.GetFeatureDefID(featureID)
 	
-		Spring.Echo("feature made " .. featureID .. " defid " .. featuredef .. " PE def is " .. WaveDefs.PowerEggFeatureID )
+		--Spring.Echo("feature made " .. featureID .. " defid " .. featuredef )
 	if (featuredef == WaveDefs.MetalEggFeatureID) or (featuredef == WaveDefs.PowerEggFeatureID) then
 		if CurrentEggs[featuredef] == nil then
 			CurrentEggs[featuredef] = {}

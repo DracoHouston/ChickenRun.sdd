@@ -46,8 +46,10 @@ local spInsertUnitCmdDesc = Spring.InsertUnitCmdDesc
 local spGetUnitPosition = Spring.GetUnitPosition
 local spSpawnProjectile = Spring.SpawnProjectile
 local spSetUnitMoveGoal = Spring.SetUnitMoveGoal
+local spGetUnitCommands = Spring.GetUnitCommands
 local spGetUnitDefID = Spring.GetUnitDefID
 local spGetProjectilePosition = Spring.GetProjectilePosition
+local spGetProjectileDefID = Spring.GetProjectileDefID
 
 local goalSet = {}
 local EggsecutiveDecisionsDefs = VFS.Include("LuaRules/Configs/weapon_eggsecutivedecisions_defs.lua")
@@ -198,10 +200,12 @@ function gadget:ProjectileDestroyed(proID, proOwnerID)
 	if not proID then
 		return
 	end
+	local projdef = spGetProjectileDefID(proID)
+	if projdef == EggThrowWeaponID then
+		local x, y, z = spGetProjectilePosition(proID)
 	
-	local x, y, z = spGetProjectilePosition(proID)
-	
-	local eggID = Spring.CreateFeature("chickenrunpoweregg", x, y, z, math.random(-32000, 32000))
+		local eggID = Spring.CreateFeature("chickenrunpoweregg", x, y, z, math.random(-32000, 32000))
+	end
 	Spring.Echo("ProjectileDestroyed called" .. proID)
 end
 
@@ -251,7 +255,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 		--Spring.Echo("eggy unit and order that isnt positional OR unit is dead")
 		return true, true
 	end
-	
+	local cmdQueueCount = spGetUnitCommands(unitID, 0);
 	local _,_,_,x, y, z = spGetUnitPosition(unitID, true)
 	local distSqr = GetDist2Sqr({x, y, z}, cmdParams)
 	local rangesquared = 0
@@ -267,6 +271,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	projectileParams.gravity = -gconstant
 	if cmdID == CMD_EGGTHROW then
 		--Spring.Echo("its egg throw")
+		
 		rangesquared = EggThrowRangeSquared
 		cost = EggThrowCost
 		whiteframes = EggThrowWhiteFrames
@@ -283,14 +288,31 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	if (distSqr < rangesquared) then
 	--Spring.Echo("in range")
 		if (currentenergy >= cost) and spGetUnitRulesParam(unitID,"disarmed") ~= 1 then
-			Spring.Echo("firing")
-			--currentenergy = currentenergy - cost
-			spSetUnitRulesParam(unitID, "EggsecutiveEnergy", currentenergy - cost)
-			projectileParams.speed = GetYeetVelocity({x, y, z}, cmdParams, muzzlevelocity)
-			--projectileParams.speed = {0,300,0}
-			local projectileid = spSpawnProjectile(weapontouse, projectileParams)
-			if (projectileid ~= nil) then Spring.Echo("new projectile id " .. projectileid) else Spring.Echo("new projectile id is nil!") end
-			return true, true -- command was used and finished. remove it
+			if (cmdID == CMD_EGGTHROW) then
+				if spGetUnitRulesParam(unitID,"HoldingPowerEgg") ~= 1 then
+					if cmdQueueCount > 1 then
+						return true, true -- finished
+					else
+						return true, false -- autoyeet
+					end
+				else
+					spSetUnitRulesParam(unitID, "HoldingPowerEgg", 0)
+					spSetUnitRulesParam(unitID, "EggsecutiveEnergy", currentenergy - cost)
+					projectileParams.speed = GetYeetVelocity({x, y, z}, cmdParams, muzzlevelocity)
+					local projectileid = spSpawnProjectile(weapontouse, projectileParams)
+					if cmdQueueCount > 1 then
+						return true, true -- finished
+					else
+						return true, false -- autoyeet
+					end
+				end
+			else
+				spSetUnitRulesParam(unitID, "EggsecutiveEnergy", currentenergy - cost)
+				projectileParams.speed = GetYeetVelocity({x, y, z}, cmdParams, muzzlevelocity)
+				local projectileid = spSpawnProjectile(weapontouse, projectileParams)
+				return true, true -- command was used and finished. remove it
+			end
+			
 		else
 			Spring.Echo("cant afford to egg")
 			return true, false -- command was used but don't remove it

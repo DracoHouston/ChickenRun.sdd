@@ -617,9 +617,9 @@ local profreshnodupesarray = {}
 --local eggsecutivesuitename = nil
 --local eggsecutivesuiteid = nil
 --local eggsecutivesuitedef = nil
-
-for k, v in pairs(FeatureDefs) do
-	local cp = v.customParams
+--Spring.Echo("feature def roll call!")
+--for k, v in pairs(FeatureDefs) do
+	--[[local cp = v.customParams
 	if (cp.ischickenrunegg ~= nil) then
 		Spring.Echo("ischickenrunegg found " .. cp.ischickenrunegg)
 	end
@@ -627,8 +627,13 @@ for k, v in pairs(FeatureDefs) do
 		WaveDefs.MetalEggFeatureID = k
 	elseif (WaveDefs.PowerEggFeatureID == nil) and (cp.ischickenrunegg == "power") then
 		WaveDefs.PowerEggFeatureID = k
-	end
-end
+	end]]
+	--Spring.Echo("feature def key name " .. k)
+--end
+--Spring.Echo("feature def roll call ended!")
+
+WaveDefs.MetalEggFeatureID = FeatureDefNames["chickenrunmetalegg"].id
+WaveDefs.PowerEggFeatureID = FeatureDefNames["chickenrunpoweregg"].id
 
 for k, v in pairs(UnitDefNames) do
 	local cp = v.customParams
