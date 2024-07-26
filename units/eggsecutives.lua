@@ -62,7 +62,7 @@ local weapon_nanitebomb = {
         eggsecutiveenergycost       = 75,
         eggsecutivewhiteframes      = 4,
 		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
-        child_chain_projectile      = [[NANITE_BOMB_ARMED]],
+        --child_chain_projectile      = [[NANITE_BOMB_ARMED]],
 		light_camera_height         = 2500,
 		light_color                 = [[1.5 0.75 1.8]],
 		light_radius                = 280,
@@ -78,13 +78,13 @@ local weapon_nanitebomb_armed = {
     name                    = [[Grizzly Co Nanite Bomb]],
     highTrajectory          = 2,
     accuracy                = 256,
-    areaOfEffect            = 512,
-    cegTag                  = [[beamweapon_muzzle_purple]],
-   -- commandFire             = true,
+    --areaOfEffect            = 512,
+    --cegTag                  = [[beamweapon_muzzle_purple]],
+    -- commandFire             = true,
     craterBoost             = 0,
     craterMult              = 0,    
     --explosionGenerator      = [[custom:nanitebomb]],
-   -- explosionSpeed          = 5,
+    -- explosionSpeed          = 5,
     --fireStarter             = 100,
     impulseBoost            = 0,
     --myGravity               = gconstant,
@@ -93,7 +93,11 @@ local weapon_nanitebomb_armed = {
     model                   = [[wep_b_fabby.s3o]],
 	noExplode               = true,
 	noSelfDamage            = true,
+    groundbounce            = 1,
+    bouncerebound           = 0.25,
+    bounceslip              = 0.25,
     range                   = 750,
+    numBounce               = 99,
     --reloadtime              = 25,
     --smokeTrail              = true,
     --soundHit                = [[weapon/aoe_aura2]],
@@ -104,8 +108,12 @@ local weapon_nanitebomb_armed = {
     weaponVelocity          = 900,    
 
 	customParams = {        
-        timed_explosion             = 2 * 30,
-        child_chain_projectile      = [[NANITE_BOMB_EXPLODING]],
+        bombthrowarmtime      = 1 * 30,
+        iseggsecutivedecision = [[bombarmed]],
+        thermite_frames       = 30,
+        thermite_dps_start    = 0,
+        thermite_dps_end      = 0,
+        --child_chain_projectile      = [[NANITE_BOMB_EXPLODING]],
 	},
 
 	damage = {
@@ -124,17 +132,17 @@ local weapon_nanitebomb_exploding = {
     craterMult              = 0,    
     explosionGenerator      = [[custom:nanitebomb]],
     explosionSpeed          = 5,
-    fireStarter             = 100,
+    --fireStarter             = 100,
     impulseBoost            = 0,
-    myGravity               = gconstant,
+    --myGravity               = gconstant,
     impulseFactor           = 0,
     interceptedByShieldType = 2,
     model                   = [[wep_b_fabby.s3o]],
     range                   = 750,
-    reloadtime              = 25,
+    --reloadtime              = 25,
     smokeTrail              = true,
     soundHit                = [[weapon/aoe_aura2]],
-    soundHitVolume          = 8,
+    soundHitVolume          = 1,
     soundStart              = [[weapon/cannon/cannon_fire3]],
     turret                  = true,
     weaponType              = [[Cannon]],
@@ -144,6 +152,8 @@ local weapon_nanitebomb_exploding = {
 		timeslow_damagefactor       = [[10]],
 		timeslow_overslow_frames    = 2*30, --2 seconds before slow decays
 		muzzleEffectFire            = [[custom:RAIDMUZZLE]],
+        iseggsecutivedecision       = [[bombexploding]],
+        bombthrowarmtime           = 1,
 
 		light_camera_height         = 2500,
 		light_color                 = [[1.5 0.75 1.8]],
@@ -511,11 +521,11 @@ local EggsecutiveDefault = {
     },
 
     weaponDefs = {
-        NANITE_BOMB = weapon_nanitebomb,
-        NANITE_BOMB_ARMED = weapon_nanitebomb_armed,
-        NANITE_BOMB_EXPLODING = weapon_nanitebomb_exploding,
-        EGG_THROW = weapon_eggthrow,
-        EGG_CANNON = weapon_eggcannon,
+    --    NANITE_BOMB = weapon_nanitebomb,
+    --    NANITE_BOMB_ARMED = weapon_nanitebomb_armed,
+    --    NANITE_BOMB_EXPLODING = weapon_nanitebomb_exploding,
+    --    EGG_THROW = weapon_eggthrow,
+    --    EGG_CANNON = weapon_eggcannon,
     },
     featureDefs = {
         DEAD = {
@@ -552,6 +562,101 @@ local EggsecutiveHeavy = MergeTable(EggsecutiveDefault, {
 })
 
 --------------------------------------------------------------------------------
+--Universal Weapons Guy (dummy unit def to avoid duplicate universal weapon defs)
+--------------------------------------------------------------------------------
+
+Eggsecutives.UniversalWeaponsGuy = {
+    
+    name        = [[Universal Weapons Guy]],
+    description = [[Fake unit for defining weapons]],
+    acceleration            = 0.75,
+    activateWhenBuilt       = true,
+    autoHeal                = 100,
+    brakeRate               = 2.7,
+    builder                 = false,    
+    buildPic                = [[commrecon.png]],
+    --canManualFire           = true,
+    canGuard                = true,
+    canMove                 = true,
+    canPatrol               = true,
+    category                = [[LAND]],
+    collisionVolumeOffsets  = [[0 0 0]],
+    collisionVolumeScales   = [[45 50 45]],
+    collisionVolumeType     = [[CylY]],
+    corpse                  = [[DEAD]],
+    energyStorage           = 0,
+    explodeAs               = [[ESTOR_BUILDINGEX]],
+    footprintX              = 2,
+    footprintZ              = 2,
+    health                  = 1650,
+    iconType                = [[commander1]],
+    leaveTracks             = true,
+    maxSlope                = 36,
+    maxWaterDepth           = 5000,
+    metalCost               = 1200,
+    metalStorage            = 0,
+    movementClass           = [[AKBOT2]],
+    noChaseCategory         = [[TERRAFORM SATELLITE FIXEDWING GUNSHIP HOVER SHIP SWIM SUB LAND FLOAT SINK TURRET]],
+    objectName              = [[commrecon.s3o]],
+    script                  = [[commrecon.lua]],
+    selfDestructAs          = [[ESTOR_BUILDINGEX]],   
+    showNanoSpray           = false,
+    showPlayerName          = true,
+    sightEmitHeight         = 40,
+    sightDistance           = 500,
+    sonarDistance           = 300,
+    trackOffset             = 0,
+    trackStrength           = 8,
+    trackStretch            = 1,
+    trackType               = [[ComTrack]],
+    trackWidth              = 22,
+    turnRate                = 1620,
+    upright                 = true,
+    workerTime              = 0,
+    highTrajectory          = 2,     
+
+    sfxtypes = {
+        explosiongenerators = {
+            [[custom:NONE]],
+            [[custom:NONE]],
+            [[custom:RAIDMUZZLE]],
+            [[custom:NONE]],
+            [[custom:VINDIBACK]],
+            [[custom:FLASH64]],
+        },
+    },    
+
+    customParams = { },    
+
+    weapons = { },
+
+    weaponDefs = {
+        NANITE_BOMB = weapon_nanitebomb,
+        NANITE_BOMB_ARMED = weapon_nanitebomb_armed,
+        NANITE_BOMB_EXPLODING = weapon_nanitebomb_exploding,
+        EGG_THROW = weapon_eggthrow,
+        EGG_CANNON = weapon_eggcannon,
+    },
+    featureDefs = {
+        DEAD = {
+            blocking    = true,
+            featureDead = [[HEAP]],
+            footprintX  = 2,
+            footprintZ  = 2,
+            object      = [[commrecon_dead.s3o]],
+        },
+
+        HEAP = {
+            blocking    = false,
+            footprintX  = 2,
+            footprintZ  = 2,
+            object      = [[debris2x2c.s3o]],
+        },
+    },
+}
+
+--------------------------------------------------------------------------------
+--Eggsecutives
 --------------------------------------------------------------------------------
 
 Eggsecutives.eggsecutive_splattershot = MergeTable(EggsecutiveLight, {

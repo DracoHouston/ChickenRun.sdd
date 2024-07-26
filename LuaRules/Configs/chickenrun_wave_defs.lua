@@ -18,6 +18,8 @@ end
 
 include("LuaRules/Configs/constants.lua")
 
+local EggNames = VFS.Include("LuaRules/Configs/chickenrun_eggnames.lua")
+
 --WaveDefs fields declared here so I can stop having to look for them
 local WaveDefs = { 
 	Constants = { 
@@ -632,8 +634,8 @@ local profreshnodupesarray = {}
 --end
 --Spring.Echo("feature def roll call ended!")
 
-WaveDefs.MetalEggFeatureID = FeatureDefNames["chickenrunmetalegg"].id
-WaveDefs.PowerEggFeatureID = FeatureDefNames["chickenrunpoweregg"].id
+WaveDefs.MetalEggFeatureID = FeatureDefNames[EggNames.MetalEggName].id
+WaveDefs.PowerEggFeatureID = FeatureDefNames[EggNames.PowerEggName].id
 
 for k, v in pairs(UnitDefNames) do
 	local cp = v.customParams

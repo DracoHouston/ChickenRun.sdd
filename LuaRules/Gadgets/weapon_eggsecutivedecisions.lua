@@ -40,22 +40,26 @@ local ThrowBombCmdDesc = {
 	tooltip = "Throw Nanite Bomb: Arms on contact, explodes after " .. NaniteBombArmTime .. " seconds. Repairs Eggsecutives, KBuds and Gushers. Damages and slows Chickenids. Edible for Maws and Mudmouth. Hazardous to Flyfish launchers.",
 }
 
-local spGetUnitRulesParam = Spring.GetUnitRulesParam
-local spSetUnitRulesParam = Spring.SetUnitRulesParam
-local spInsertUnitCmdDesc = Spring.InsertUnitCmdDesc
-local spGetUnitPosition = Spring.GetUnitPosition
-local spSpawnProjectile = Spring.SpawnProjectile
-local spSetUnitMoveGoal = Spring.SetUnitMoveGoal
-local spGetUnitCommands = Spring.GetUnitCommands
-local spGetUnitDefID = Spring.GetUnitDefID
-local spGetProjectilePosition = Spring.GetProjectilePosition
-local spGetProjectileDefID = Spring.GetProjectileDefID
+local spGetUnitRulesParam		= Spring.GetUnitRulesParam
+local spSetUnitRulesParam		= Spring.SetUnitRulesParam
+local spInsertUnitCmdDesc		= Spring.InsertUnitCmdDesc
+local spGetUnitPosition			= Spring.GetUnitPosition
+local spSpawnProjectile			= Spring.SpawnProjectile
+local spSetUnitMoveGoal			= Spring.SetUnitMoveGoal
+local spClearUnitGoal			= Spring.ClearUnitGoal
+local spGetUnitCommands			= Spring.GetUnitCommands
+local spGetUnitDefID			= Spring.GetUnitDefID
+local spGetProjectilePosition	= Spring.GetProjectilePosition
+local spGetProjectileDefID		= Spring.GetProjectileDefID
+local spGetProjectileVelocity	= Spring.GetProjectileVelocity
 
 local goalSet = {}
 local EggsecutiveDecisionsDefs = VFS.Include("LuaRules/Configs/weapon_eggsecutivedecisions_defs.lua")
 local EggsecutiveDefs = EggsecutiveDecisionsDefs.EggsecutiveDefs
 local UniversalWeaponDefs = EggsecutiveDecisionsDefs.UniversalWeaponDefs
 local BombThrowWeaponID = EggsecutiveDecisionsDefs.BombThrowWeaponID
+local BombArmedWeaponID = EggsecutiveDecisionsDefs.BombArmedWeaponID
+local BombExplodingWeaponID = EggsecutiveDecisionsDefs.BombExplodingWeaponID
 local EggThrowWeaponID = EggsecutiveDecisionsDefs.EggThrowWeaponID
 local EggCannonWeaponID = EggsecutiveDecisionsDefs.EggCannonWeaponID
 local BombThrowRange = UniversalWeaponDefs[BombThrowWeaponID].Range
@@ -74,6 +78,7 @@ local BombThrowSpeed = UniversalWeaponDefs[BombThrowWeaponID].Speed
 local EggThrowSpeed = UniversalWeaponDefs[EggThrowWeaponID].Speed
 local EggCannonSpeed = UniversalWeaponDefs[EggCannonWeaponID].Speed
 local CurrentEggsecutives = {}
+local CurrentBombs = {}
 
 local gconstant = 120 / (30*30)
 
@@ -140,7 +145,7 @@ end
 local upvector = { 0.0, 1.0, 0.0 }
 
 local function GetYeetVelocity(frompos, topos, velocity)
-	Spring.Echo("get yeet velocity from x " .. frompos[1] .. " y " .. frompos[2] .. " z " .. frompos[3] .. "to x " .. topos[1] .. " y " .. topos[2] .. " z " .. topos[3] .. " at velocity " .. velocity)
+	--Spring.Echo("get yeet velocity from x " .. frompos[1] .. " y " .. frompos[2] .. " z " .. frompos[3] .. "to x " .. topos[1] .. " y " .. topos[2] .. " z " .. topos[3] .. " at velocity " .. velocity)
 	--local innerequation = (GetDist2(topos,frompos) * gconstant) / (velocity * velocity)
 	--Spring.Echo("innerequation " .. innerequation)
 	--local afterrad = math.rad(innerequation)
@@ -174,14 +179,14 @@ local function GetYeetVelocity(frompos, topos, velocity)
 		safedot = -1.0
 	end
 	local pitch = math.asin(safedot)
-	Spring.Echo("pitch " .. pitch)
+	--Spring.Echo("pitch " .. pitch)
 	--local dir = GetDir2(topos, frompos)
 	local yaw = math.atan2(dir[3], dir[1])-- + math.rad(180)
-	Spring.Echo("yaw " .. yaw)
+	--Spring.Echo("yaw " .. yaw)
 	local yeetvector = pitchyawtonormal(pitch, yaw)
-	Spring.Echo("yeet vector x" .. yeetvector[1] .. " y " .. yeetvector[2] .. " z " .. yeetvector[3])
+	--Spring.Echo("yeet vector x" .. yeetvector[1] .. " y " .. yeetvector[2] .. " z " .. yeetvector[3])
 	local yeetvelocity = multiplyvector3(yeetvector, velocity)
-	Spring.Echo("yeet velocity x" .. yeetvelocity[1] .. " y " .. yeetvelocity[2] .. " z " .. yeetvelocity[3])
+	--Spring.Echo("yeet velocity x" .. yeetvelocity[1] .. " y " .. yeetvelocity[2] .. " z " .. yeetvelocity[3])
 	return yeetvelocity
 end
 
@@ -193,7 +198,12 @@ function gadget:ProjectileCreated(proID, proOwnerID, weaponID)
 	if not proID then
 		return
 	end
-	Spring.Echo("ProjectileCreated called" .. proID)
+	--Spring.Echo("ProjectileCreated called" .. proID)
+	local projdef = spGetProjectileDefID(proID)
+	if (projdef == BombArmedWeaponID) or (projdef == BombExplodingWeaponID) then
+		local bombs = CurrentBombs[projdef] or {}
+		bombs[proID] = UniversalWeaponDefs[projdef].ArmTime
+	end
 end
 
 function gadget:ProjectileDestroyed(proID, proOwnerID)
@@ -205,8 +215,34 @@ function gadget:ProjectileDestroyed(proID, proOwnerID)
 		local x, y, z = spGetProjectilePosition(proID)
 	
 		local eggID = Spring.CreateFeature("chickenrunpoweregg", x, y, z, math.random(-32000, 32000))
+	elseif projdef == BombThrowWeaponID then
+		local x, y, z = spGetProjectilePosition(proID)
+		local vx, vy, vz = spGetProjectileVelocity(proID)
+		local projectileParams = {}
+		projectileParams.pos = {x, y, z}
+		local ownerID = Spring.GetProjectileOwnerID(proID)
+		if Spring.ValidUnitID(ownerID) then
+			projectileParams.owner = ownerID
+		end
+		projectileParams.team = Spring.GetProjectileTeamID(proID)
+		projectileParams.gravity = -gconstant
+		projectileParams.speed = { vx, vy, vz }
+		local projectileid = spSpawnProjectile(BombArmedWeaponID, projectileParams)
+	elseif projdef == BombArmedWeaponID then
+		local x, y, z = spGetProjectilePosition(proID)
+		local vx, vy, vz = spGetProjectileVelocity(proID)
+		local projectileParams = {}
+		projectileParams.pos = {x, y, z}
+		local ownerID = Spring.GetProjectileOwnerID(proID)
+		if Spring.ValidUnitID(ownerID) then
+			projectileParams.owner = ownerID
+		end
+		projectileParams.team = Spring.GetProjectileTeamID(proID)
+		projectileParams.gravity = 0
+		projectileParams.speed = { 0, 0, 0 }
+		local projectileid = spSpawnProjectile(BombExplodingWeaponID, projectileParams)
 	end
-	Spring.Echo("ProjectileDestroyed called" .. proID)
+	--Spring.Echo("ProjectileDestroyed called" .. proID)
 end
 
 function gadget:AllowCommand_GetWantedCommand()
@@ -287,6 +323,10 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	end
 	if (distSqr < rangesquared) then
 	--Spring.Echo("in range")
+		if goalSet[unitID] then
+			goalSet[unitID] = nil
+			spClearUnitGoal(unitID)
+		end
 		if (currentenergy >= cost) and spGetUnitRulesParam(unitID,"disarmed") ~= 1 then
 			if (cmdID == CMD_EGGTHROW) then
 				if spGetUnitRulesParam(unitID,"HoldingPowerEgg") ~= 1 then
@@ -314,7 +354,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 			end
 			
 		else
-			Spring.Echo("cant afford to egg")
+			--Spring.Echo("cant afford to egg")
 			return true, false -- command was used but don't remove it
 		end
 	else
@@ -336,24 +376,30 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 		spSetUnitRulesParam(unitID, "EggsecutiveEnergyPerFrame", eggsecutivedef.EnergyPerFrame)		
 		spInsertUnitCmdDesc(unitID, ThrowBombCmdDesc)
 		spInsertUnitCmdDesc(unitID, ThrowEggCmdDesc)
-		table.insert(CurrentEggsecutives, unitID)
+		CurrentEggsecutives[unitID] = true
 		return
+	end	
+end
+
+function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
+	local eggsecutivedef = EggsecutiveDefs[unitDefID]
+	if eggsecutivedef ~= nil then
+		CurrentEggsecutives[unitID] = nil
 	end
-	
 end
 
 function gadget:GameFrame(n)
 	for k, v in pairs(CurrentEggsecutives) do
-		local defid = spGetUnitDefID(v)
+		local defid = spGetUnitDefID(k)
 		if defid ~= nil then
 			local eggsecutivedef = EggsecutiveDefs[defid]
-			local currentenergy = spGetUnitRulesParam(v, "EggsecutiveEnergy")
+			local currentenergy = spGetUnitRulesParam(k, "EggsecutiveEnergy")
 			if currentenergy < eggsecutivedef.EnergyPool then
 				local newenergy = currentenergy + eggsecutivedef.EnergyPerFrame
 				if newenergy > eggsecutivedef.EnergyPool then
 					newenergy = eggsecutivedef.EnergyPool
 				end
-				spSetUnitRulesParam(v, "EggsecutiveEnergy", newenergy)
+				spSetUnitRulesParam(k, "EggsecutiveEnergy", newenergy)
 			end
 		end
 	end

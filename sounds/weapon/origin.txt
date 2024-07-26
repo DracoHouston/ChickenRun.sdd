@@ -1,2 +1,8 @@
 eggdrop.wav:
 Ding.wav by ArtOrDie -- https://freesound.org/s/338148/ -- License: Attribution 4.0
+
+bombarm.wav
+Timer Switch by Thalamus_Lab -- https://freesound.org/s/250899/ -- License: Attribution 3.0
+
+bombtimer.wave
+Buzzer alert- Lux Kitchen Timer.wav by knufds -- https://freesound.org/s/670891/ -- License: Creative Commons 0

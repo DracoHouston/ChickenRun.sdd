@@ -326,11 +326,7 @@ local function EndGameWithVictory()
 end
 
 local function TickEggs()
-	--Spring.Echo("Tick Eggs starting")
 	local profreshpositions = {}
-	local metaleggpositions = {}
-	local powereggpositions = {}
-	local totalmetalreclaim = 0
 	
 	local suitex, suitey, suitez
 
@@ -341,43 +337,13 @@ local function TickEggs()
 	for i = 1, #CurrentEggsecutives do
 		local uid = CurrentEggsecutives[i]
 		local profreshx, profreshy, profreshz = spGetUnitPosition(uid)
-		table.insert(profreshpositions, {x = profreshx, y = profreshy, z = profreshz, id = uid })
-		--Spring.Echo("profresh " .. i .. " x " .. profreshx ..  " y " .. profreshy .. " z " .. profreshz .. " id " .. uid)
-	end
-		
-	local activemetaleggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
-	local activepowereggs = CurrentEggs[WaveDefs.PowerEggFeatureID] or {}
-
-	for i = 1, #activemetaleggs do
-		local uid = activemetaleggs[i]
-		local eggx, eggy, eggz = spGetFeaturePosition(uid)
-		if eggx == nil or eggy == nil or eggz == nil then
-			Spring.Echo("metal egg " .. i .. " id " .. uid .. "has a nil position!!!!")
-		else
-			--Spring.Echo("metal egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)			
-			table.insert(metaleggpositions, {x = eggx, y = eggy, z = eggz, id = uid })
+		if profreshx ~= nil and profreshy ~= nil and profreshz ~= nil then	
+			table.insert(profreshpositions, {x = profreshx, y = profreshy, z = profreshz, id = uid })
 		end
 	end
-
-	for i = 1, #activepowereggs do
-		local uid = activepowereggs[i]
-		local eggx, eggy, eggz = spGetFeaturePosition(uid)
-		if eggx == nil or eggy == nil or eggz == nil then
-			Spring.Echo("power egg " .. i .. " id " .. uid .. "has a nil position!!!!")
-		else
-			--Spring.Echo("power egg " .. i .. " x " .. eggx .. " y " .. eggy .. " z " .. eggz .. " id " .. uid)
-			table.insert(powereggpositions, {x = eggx, y = eggy, z = eggz, id = uid })
-		end
-	end
-
-	local reclaimperegg = WaveDefs.Constants.MetalEggReclaim
-	local metaleggstokeep = {}
-	local metaleggsreclaimed = {}
-	local powereggstokeep = {}			
-	local powereggsreclaimed = {}
+	
 	local powereggsdunkedthisframe = 0
 	
-	--Spring.Echo("metal egg threshold squared " .. metaleggradiussquared)
 	for profreshi = 1, #profreshpositions do
 		local profreshpos = profreshpositions[profreshi]
 		local profreshx = profreshpos.x
@@ -385,89 +351,13 @@ local function TickEggs()
 		local profreshz = profreshpos.z
 		local profreshid = profreshpos.id
 
-		for eggi = 1, #metaleggpositions do
-			local eggpos = metaleggpositions[eggi]
-			local eggx = eggpos.x
-			local eggy = eggpos.y
-			local eggz = eggpos.z
-			local eggid = eggpos.id
-			local distsquared = DistSq(profreshx, profreshz, eggx, eggz)
-			--Spring.Echo("profresh " .. profreshid .. " to metal egg " .. eggid .. "distance squared " .. distsquared)
-			if distsquared <= metaleggradiussquared then
-			--	Spring.Echo("keeping metal egg")
-			--	table.insert(metaleggstokeep, eggid)
-			--else
-				--Spring.Echo("attempting to reclaim metal egg")
-				if metaleggsreclaimed[eggid] == nil then
-					--Spring.Echo("reclaimed")
-					metaleggsreclaimed[eggid] = profreshid
-					totalmetalreclaim = totalmetalreclaim + reclaimperegg
-				end
-			end
-		end
 		local haspoweregg = spGetUnitRulesParam(profreshid, "HoldingPowerEgg") or 0
-		if haspoweregg == 0 then
-			for eggi = 1, #powereggpositions do
-				local eggpos = powereggpositions[eggi]
-				local eggx = eggpos.x
-				local eggy = eggpos.y
-				local eggz = eggpos.z
-				local eggid = eggpos.id
-				local distsquared = DistSq(profreshx, profreshz, eggx, eggz)
-				if distsquared <= powereggradiussquared then
-					--table.insert(powereggstokeep, eggid)
-				--else
-					if powereggsreclaimed[eggid] == nil then
-						powereggsreclaimed[eggid] = profreshid
-						spSetUnitRulesParam(profreshid, "HoldingPowerEgg", 1)
-						--ProfreshionalHasPowerEgg[profreshi] = true
-						break
-					end
-				end
-			end
-		else
+		if haspoweregg == 1 then
 			local distsquared = DistSq(profreshx, profreshz, suitex, suitez)
 			if distsquared <= dunkradiussquared then	
-				--ProfreshionalHasPowerEgg[profreshi] = false
 				spSetUnitRulesParam(profreshid, "HoldingPowerEgg", 0)
-				--CurrentEggsDunked = CurrentEggsDunked + 1
 				powereggsdunkedthisframe = powereggsdunkedthisframe + 1
 			end
-		end
-	end
-
-	local metalperplayer = totalmetalreclaim * SharedMetalFactor
-	--Spring.Echo("metal per player " .. metalperplayer .. " total " .. totalmetalreclaim .. " shared metal factor " .. SharedMetalFactor)
-
-	--for i = 1, #MetalEggs do
-	--	local uid = MetalEggs[i]
-		--if metaleggsreclaimed[uid] == nil then
-		--	table.insert(metaleggstokeep, uid)
-		--end
-	--end
-
-	--for i = 1, #PowerEggs do
-	--	local uid = PowerEggs[i]
-		--if powereggsreclaimed[uid] == nil then
-		--	table.insert(powereggstokeep, uid)
-		--end
-	--end
-
-	for k, v in pairs(metaleggsreclaimed) do
-		spDestroyFeature(k)
-		--Spring.Echo("destroying metal egg " .. k)
-		--todo: award to this team the credit			
-	end
-
-	for k, v in pairs(powereggsreclaimed) do
-		spDestroyFeature(k)
-		--Spring.Echo("destroying power egg " .. k)
-		--todo: award to this team the credit			
-	end
-
-	if metalperplayer > 0 then
-		for i, t in ipairs(PlayerTeams) do
-			spAddTeamResource( t, "metal", metalperplayer )
 		end
 	end
 	
@@ -558,7 +448,7 @@ function gadget:FeatureCreated(featureID)
 		if CurrentEggs[featuredef] == nil then
 			CurrentEggs[featuredef] = {}
 		end
-		Spring.Echo("egg made " .. featureID)
+		--Spring.Echo("egg made " .. featureID)
 		table.insert(CurrentEggs[featuredef], featureID)
 	end
 end
@@ -576,7 +466,7 @@ function gadget:FeatureDestroyed(featureID)
 				end
 			end
 			if idxtoremove ~= nil then
-				Spring.Echo("egg removed " .. featureID)
+				--Spring.Echo("egg removed " .. featureID)
 				table.remove(theseeggs, idxtoremove)
 			end
 		end
@@ -584,15 +474,15 @@ function gadget:FeatureDestroyed(featureID)
 end
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam)
-	local bossdef = WaveDefs.BossDefs[unitDefID]
-	if bossdef ~= nil then
-		local targetID = CurrentEggsecutives[1]
-		if (targetID) then
-			--local tx, ty, tz = spGetUnitPosition(targetID)
-			spGiveOrderToUnit(unitID, CMD_ATTACK, targetID, 0)
-			return
-		end
-	end
+	--local bossdef = WaveDefs.BossDefs[unitDefID]
+	--if bossdef ~= nil then
+	--	local targetID = CurrentEggsecutives[1]
+	--	if (targetID) then
+	--		--local tx, ty, tz = spGetUnitPosition(targetID)
+	--		spGiveOrderToUnit(unitID, CMD_ATTACK, targetID, 0)
+	--		return
+	--	end
+	--end
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
@@ -611,17 +501,17 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
 	if idxtoremove ~= nil then
 		--Spring.Echo("WE GOT A HIT EARLIER")
 		table.remove(ActiveBosses, idxtoremove)
-		local bossdef = WaveDefs.BossDefs[unitDefID]
-		if bossdef ~= nil then
+		--local bossdef = WaveDefs.BossDefs[unitDefID]
+		--if bossdef ~= nil then
 			--Spring.Echo("BOSS DEF ISNT NIL")
-			if bossdef.PowerEggsOnDeath ~= nil then
+			--if bossdef.PowerEggsOnDeath ~= nil then
 			--Spring.Echo("POWER EGGS ISNT NIL IT IS " .. bossdef.PowerEggsOnDeath)
-				SpawnPowerEggs(bossdef.PowerEggsOnDeath, x, y, z)
-			end
-			if bossdef.MetalEggsOnDeath ~= nil then
-				SpawnMetalEggs(bossdef.MetalEggsOnDeath, x, y, z)
-			end
-		end
+			--	SpawnPowerEggs(bossdef.PowerEggsOnDeath, x, y, z)
+			--end
+			--if bossdef.MetalEggsOnDeath ~= nil then
+			--	SpawnMetalEggs(bossdef.MetalEggsOnDeath, x, y, z)
+			--end
+		--end
 		return
 	end
 	for i, uid in ipairs(ActiveChickenids) do
@@ -632,11 +522,11 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
 	end
 	if idxtoremove ~= nil then
 		table.remove(ActiveChickenids, idxtoremove)
-		local chickendef = WaveDefs.LesserDefs[unitDefID]
-		if chickendef ~= nil and chickendef.MetalEggsOnDeath ~= nil then
+		--local chickendef = WaveDefs.LesserDefs[unitDefID]
+		--if chickendef ~= nil and chickendef.MetalEggsOnDeath ~= nil then
 			--spawn metal eggs
-				SpawnMetalEggs(chickendef.MetalEggsOnDeath, x, y, z)
-		end
+		--		SpawnMetalEggs(chickendef.MetalEggsOnDeath, x, y, z)
+		--end
 		return
 	end
 end
@@ -708,8 +598,6 @@ function gadget:Initialize()
 	end
 	
 	TeamIDForEggsecutivesByWave = teamidsforprofreshionals
-
-	
 end
 
 else
