@@ -173,20 +173,22 @@ local function SpawnDunkFX(n)
 end
 
 local function DestroyPowerEggs()
-	for i, v in ipairs(PowerEggs) do
+	local theseeggs = CurrentEggs[WaveDefs.PowerEggFeatureID] or {}
+	for k, v in pairs(theseeggs) do
 		spDestroyFeature(v)
 	end
-	PowerEggs = {}
 end
 
 local function DestroyMetalEggs()
-	for i, v in ipairs(MetalEggs) do
+	local theseeggs = CurrentEggs[WaveDefs.MetalEggFeatureID] or {}
+	for k, v in pairs(theseeggs) do
 		spDestroyFeature(v)
 	end
-	MetalEggs = {}
 end
 
 local function RemoveUnitsForNewWave()
+	PendingBosses = {}
+	PendingLessers = {}
 	for i, v in ipairs(ActiveBosses) do
 		spDestroyUnit(v, false, true, v, true)
 	end
@@ -291,24 +293,6 @@ local function TickSpawns(n)
 	end
 end
 
-local function SpawnMetalEggs(n, x, y, z)
-	for i = 1, n do
-		local rx, rz = math.random(-30, 30), math.random(-30, 30)
-		local eggID = Spring.CreateFeature("chickenrunmetalegg", x+rx, y, z+rz, math.random(-32000, 32000))
-		--table.insert(MetalEggs, eggID)
-	end
-end
-
-local function SpawnPowerEggs(n, x, y, z)
---Spring.Echo("SPAWNING POWER EGGS " .. n .. " x " .. x .. "y " .. y .. "z " .. z)
-	for i = 1, n do
-		local rx, rz = math.random(-30, 30), math.random(-30, 30)
-		local eggID = Spring.CreateFeature("chickenrunpoweregg", x+rx, y, z+rz, math.random(-32000, 32000))
-		--table.insert(PowerEggs, eggID)
-		--Spring.Echo("SPAWNED EGG " .. eggID)
-	end
-end
-
 local function CheckTeamWipe()	
 	return false
 end
@@ -367,9 +351,6 @@ local function TickEggs()
 	_G.chickenRunEventArgs = {type="eggsdunked", eggs = powereggsdunkedthisframe}
 	SendToUnsynced("ChickenRunEvent")
 	_G.chickenRunEventArgs = nil
-
-	--MetalEggs = metaleggstokeep
-	--PowerEggs = powereggstokeep
 end
 
 local function AdvancePhase(n)
@@ -486,32 +467,16 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
-	--Spring.Echo("UNIT DESTROYED " .. unitID)
 	local idxtoremove = nil
 	local x, y, z = spGetUnitPosition(unitID)
 	for i, uid in ipairs(ActiveBosses) do
-		--Spring.Echo("LOOKING THROUGH BOSSES " .. uid .. " " .. i)
 		if uid == unitID then
-			--Spring.Echo("FOUND IT")
 			idxtoremove = i
 			break
 		end
 	end
-	--Spring.Echo("STOPPED LOOKING")
 	if idxtoremove ~= nil then
-		--Spring.Echo("WE GOT A HIT EARLIER")
 		table.remove(ActiveBosses, idxtoremove)
-		--local bossdef = WaveDefs.BossDefs[unitDefID]
-		--if bossdef ~= nil then
-			--Spring.Echo("BOSS DEF ISNT NIL")
-			--if bossdef.PowerEggsOnDeath ~= nil then
-			--Spring.Echo("POWER EGGS ISNT NIL IT IS " .. bossdef.PowerEggsOnDeath)
-			--	SpawnPowerEggs(bossdef.PowerEggsOnDeath, x, y, z)
-			--end
-			--if bossdef.MetalEggsOnDeath ~= nil then
-			--	SpawnMetalEggs(bossdef.MetalEggsOnDeath, x, y, z)
-			--end
-		--end
 		return
 	end
 	for i, uid in ipairs(ActiveChickenids) do
@@ -522,16 +487,9 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam)
 	end
 	if idxtoremove ~= nil then
 		table.remove(ActiveChickenids, idxtoremove)
-		--local chickendef = WaveDefs.LesserDefs[unitDefID]
-		--if chickendef ~= nil and chickendef.MetalEggsOnDeath ~= nil then
-			--spawn metal eggs
-		--		SpawnMetalEggs(chickendef.MetalEggsOnDeath, x, y, z)
-		--end
 		return
 	end
 end
-
-
 
 function gadget:GameFrame(n)
 	if CheckTeamWipe() then

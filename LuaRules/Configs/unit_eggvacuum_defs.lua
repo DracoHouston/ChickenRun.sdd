@@ -15,7 +15,7 @@ local EggVacuumDefs = {
 	PowerEggFeatureID = FeatureDefNames[EggNames.PowerEggName].id,
 }
 
-local modoptions = Spring.GetModOptions() or {}
+--local modoptions = Spring.GetModOptions() or {}
 
 for k, v in pairs(UnitDefs) do
 	local cp = v.customParams
