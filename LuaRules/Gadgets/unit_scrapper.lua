@@ -109,6 +109,7 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
 			Stunned = false,
 			FrontUnit = frontunitid,
 		}
+		Spring.SetUnitLoadingTransport(frontunitid, unitID)
 		spUnitAttach(unitID, frontunitid, 1)
 	end
 end
@@ -134,16 +135,19 @@ function gadget:GameFrame(n)
 				--spClearUnitGoal(k)
 				if v.Mobile == true then
 					if n%30 == 0 then
-						spGiveOrderToUnit(k, CMD.MOVE, {tx, ty, tz}, 0, 0)
+						Spring.Echo("giving scrapper move order")
+						spGiveOrderToUnit(k, CMD.MOVE, {tx, ty, tz}, 0)
 					end
 					--spSetUnitMoveGoal(k, tx, ty, tz, 0)
 				elseif v.Stunned == false then
+					Spring.Echo("rotating immobile scrapper")
 					local p, y, r = spGetUnitRotation()
 					local dir = GetDir3(topos, frompos)
 					local yaw = math.atan2(dir[3], dir[1])
 					spSetUnitRotation(k, yaw, p, r)
 				end
 			else
+				Spring.Echo("giving scrapper new target")
 				local x,y,z = spGetUnitPosition(k)
 				v.CurrentTarget = GetNearestEggsecutive(x, y, z)
 			end
